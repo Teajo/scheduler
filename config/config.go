@@ -17,6 +17,7 @@ type HTTPApiConfig struct {
 
 // Config is scheduler config
 type Config struct {
+	PluginDir string
 	*QueueConfig
 	*HTTPApiConfig
 }
@@ -35,8 +36,11 @@ func Get() *Config {
 		panic(err)
 	}
 
+	pluginDir := getenv("PLUGIN_DIR", "./plugins")
+
 	if config == nil {
 		config = &Config{
+			PluginDir: pluginDir,
 			QueueConfig: &QueueConfig{
 				MaxQueueLen: maxQueueLen,
 			},

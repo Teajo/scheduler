@@ -1,17 +1,21 @@
-package httppub
+package main
 
 import (
 	"bytes"
 	"errors"
+	"jpb/scheduler/publisher"
 	"net/http"
 )
 
-// HTTPPublisher represents a publisher
+// HTTPPublisher represents a http publisher
 type HTTPPublisher struct {
 }
 
+func main() {
+}
+
 // New creates a new publisher
-func New() *HTTPPublisher {
+func New() publisher.Publisher {
 	return &HTTPPublisher{}
 }
 

@@ -1,7 +1,7 @@
-- turn all publishers into plugins
 - refactoring sorted task slices in taskqueue (create custom sorted task slice)
 - publish retry strategies
 - write sqlite3 db 
 - Dockerfile
 - extend tests
 - change API to create queues
+- write Makefile

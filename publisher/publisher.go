@@ -2,7 +2,7 @@ package publisher
 
 import (
 	"fmt"
-	httppub "jpb/scheduler/publisher/http"
+	"jpb/scheduler/config"
 	"jpb/scheduler/utils"
 	"time"
 )
@@ -21,8 +21,7 @@ type PubManager struct {
 
 // New creates a publisher manager
 func New(taskDone chan *utils.Scheduling) *PubManager {
-	pubs := make(map[string]Publisher)
-	pubs["http"] = httppub.New()
+	pubs := loadPublisherPlugins(config.Get().PluginDir)
 
 	return &PubManager{
 		taskDone:   taskDone,

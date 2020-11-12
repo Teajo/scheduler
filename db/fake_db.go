@@ -6,7 +6,7 @@ import "jpb/scheduler/task"
 type Fakedb struct {
 }
 
-// GetFirstTasks retrieve first tasks
+// GetFirstTasks retrieve nb first tasks
 func (f *Fakedb) GetFirstTasks(nb int) []*task.Task {
 	return []*task.Task{}
 }

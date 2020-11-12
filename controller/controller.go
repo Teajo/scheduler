@@ -36,6 +36,7 @@ func New() *Ctrl {
 // Schedule schedules a task
 func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 	fmt.Println("Schedule a task at", scheduling.Date.Format(time.RFC3339Nano))
+
 	publisher, ok := c.pubs.Get(scheduling.Publisher)
 	if ok {
 		err := publisher.CheckConfig(scheduling.Settings)
