@@ -2,8 +2,10 @@ package taskqueue
 
 import (
 	"errors"
+	"fmt"
 	"jpb/scheduler/db"
 	"jpb/scheduler/task"
+	"jpb/scheduler/utils"
 	"sort"
 	"time"
 )
@@ -13,30 +15,29 @@ var veryLast = time.Unix(1<<63-1, 0)
 
 // TaskQueue represents a queue of tasks
 type TaskQueue struct {
+	db       db.Taskdb
+	last     time.Time
 	queue    []*task.Task // WARNING, only access queue from listener goroutine
 	maxLen   int
-	last     *time.Time
 	listener chan *QueueRequest
-	db       db.Taskdb
+	taskDone chan *utils.Scheduling
 }
 
 // New creates a new taskqueue
-func New(maxLen int) *TaskQueue {
-	tq := &TaskQueue{
+func New(maxLen int, taskDone chan *utils.Scheduling) *TaskQueue {
+	return &TaskQueue{
+		db:       &db.Fakedb{},
+		last:     veryLast,
 		queue:    []*task.Task{},
 		maxLen:   maxLen,
-		last:     &veryLast,
 		listener: make(chan *QueueRequest),
-		db:       &db.Fakedb{},
+		taskDone: taskDone,
 	}
-
-	tq.listen()
-	return tq
 }
 
 // Add adds task to queue
-func (q *TaskQueue) Add(date *time.Time, todo *func(string)) (string, error) {
-	task := task.New(date, q.onTaskDone(todo))
+func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
+	task := task.New(scheduling, q.onTaskDone())
 	err := q.db.StoreTask(task)
 	if err != nil {
 		return task.ID, err
@@ -70,8 +71,31 @@ func (q *TaskQueue) Len() int {
 	return len(q.queue)
 }
 
+// Listen make taskqueue listening for task events
+func (q *TaskQueue) Listen() {
+	fmt.Println("taskqueue listening for task events")
+	for {
+		r := <-q.listener
+		switch r.method {
+		case add:
+			task := (r.payload).(*task.Task)
+			err := q.add(task)
+			r.err <- err
+		case remove:
+			id := (r.payload).(string)
+			err := q.remove(id)
+			r.err <- err
+		case cancel:
+			r.err <- nil
+			return
+		default:
+			panic("Not handled method in listener")
+		}
+	}
+}
+
 func (q *TaskQueue) add(task *task.Task) error {
-	if q.Len() >= q.maxLen && task.Date.After(*q.last) {
+	if q.Len() >= q.maxLen && task.Date.After(q.last) {
 		return errors.New("Max queue length reached")
 	}
 
@@ -108,29 +132,6 @@ func (q *TaskQueue) send(method method, payload interface{}) error {
 	return err
 }
 
-func (q *TaskQueue) listen() {
-	go func() {
-		for {
-			r := <-q.listener
-			switch r.method {
-			case add:
-				task := (r.payload).(*task.Task)
-				err := q.add(task)
-				r.err <- err
-			case remove:
-				id := (r.payload).(string)
-				err := q.remove(id)
-				r.err <- err
-			case cancel:
-				r.err <- nil
-				return
-			default:
-				panic("Not handled method in listener")
-			}
-		}
-	}()
-}
-
 func (q *TaskQueue) removeByIndex(index int) {
 	q.queue = append(q.queue[:index], q.queue[index+1:]...)
 }
@@ -146,23 +147,21 @@ func (q *TaskQueue) getTaskByID(id string) (*task.Task, int) {
 
 func (q *TaskQueue) sortQueueByDate() {
 	sort.Slice(q.queue, func(i, j int) bool {
-		return q.queue[j].Date.After(*q.queue[i].Date)
+		return q.queue[j].Date.After(q.queue[i].Date)
 	})
 }
 
 func (q *TaskQueue) updateLast() {
 	if q.Len() < 1 {
-		q.last = &veryLast
+		q.last = veryLast
 		return
 	}
 	q.last = q.queue[q.Len()-1].Date
 }
 
-func (q *TaskQueue) onTaskDone(todo *func(string)) func(string) {
-	return func(id string) {
-		q.Remove(id)
-		if todo != nil {
-			(*todo)(id)
-		}
+func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
+	return func(scheduling *utils.Scheduling) {
+		q.Remove(scheduling.ID)
+		q.taskDone <- scheduling
 	}
 }

@@ -8,7 +8,7 @@ type Fakedb struct {
 
 // GetFirstTasks retrieve first tasks
 func (f *Fakedb) GetFirstTasks(nb int) []*task.Task {
-	return nil
+	return []*task.Task{}
 }
 
 // StoreTask blabla

@@ -1,31 +1,31 @@
 package task
 
 import (
+	"jpb/scheduler/utils"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // Task structure
 type Task struct {
-	ID     string
-	Date   *time.Time
-	onDone func(string)
-	done   bool
-	cancel *chan interface{}
+	ID         string
+	Date       time.Time
+	onDone     func(*utils.Scheduling)
+	done       bool
+	cancel     *chan interface{}
+	scheduling *utils.Scheduling
 }
 
 // New creates Task
-func New(date *time.Time, onDone func(string)) *Task {
+func New(scheduling *utils.Scheduling, onDone func(*utils.Scheduling)) *Task {
 	cancel := make(chan interface{})
-	id, _ := uuid.NewUUID()
 
 	t := &Task{
-		ID:     id.String(),
-		onDone: onDone,
-		cancel: &cancel,
-		Date:   date,
-		done:   false,
+		ID:         scheduling.ID,
+		onDone:     onDone,
+		cancel:     &cancel,
+		Date:       scheduling.Date,
+		done:       false,
+		scheduling: scheduling,
 	}
 
 	go t.doTask()
@@ -47,7 +47,7 @@ func (t *Task) doTask() {
 		select {
 		case <-time.After(duration):
 			t.done = true
-			t.onDone(t.ID)
+			t.onDone(t.scheduling)
 			return
 		case <-*t.cancel:
 			return

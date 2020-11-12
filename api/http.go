@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"jpb/scheduler/controller"
+	"jpb/scheduler/utils"
 	"net/http"
 	"time"
 
@@ -16,20 +17,26 @@ type HTTPApi struct {
 	ctrl *controller.Ctrl
 }
 
-type scheduling struct {
-	Date string `json:"date"`
+type successResponse struct {
+	Message string `json:"message"`
+}
+
+type errorResponse struct {
+	Error string `json:"error"`
 }
 
 // NewHTTPApi creates a new http api struct
-func NewHTTPApi(port int) *HTTPApi {
+func NewHTTPApi(port int, ctrl *controller.Ctrl) *HTTPApi {
 	return &HTTPApi{
 		port: port,
-		ctrl: controller.New(),
+		ctrl: ctrl,
 	}
 }
 
 // Listen starts listening
 func (a *HTTPApi) Listen() {
+	fmt.Println("http api listening for schedules")
+
 	r := chi.NewRouter()
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -38,10 +45,13 @@ func (a *HTTPApi) Listen() {
 
 	r.Post("/schedule", func(w http.ResponseWriter, r *http.Request) {
 		var scheduling scheduling
+		w.Header().Set("Content-Type", "application/json")
+
 		err := json.NewDecoder(r.Body).Decode(&scheduling)
 		if err != nil {
 			fmt.Println(err.Error())
-			w.Write([]byte("not ok"))
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(errorResponse{Error: "Error with body format"})
 			return
 		}
 
@@ -49,17 +59,21 @@ func (a *HTTPApi) Listen() {
 		t, err := time.Parse(layout, scheduling.Date)
 		if err != nil {
 			fmt.Println(err.Error())
-			w.Write([]byte("not ok"))
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(errorResponse{Error: "Date is not ISO formatted"})
 			return
 		}
 
-		id, err := a.ctrl.Schedule(&t)
+		id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publisher, scheduling.Settings))
 		if err != nil {
-			w.Write([]byte("failed to create task"))
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(errorResponse{Error: err.Error()})
 			return
 		}
 
-		w.Write([]byte(fmt.Sprintf("task %s created", id)))
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(successResponse{Message: fmt.Sprintf("Task %s created", id)})
 	})
 
 	http.ListenAndServe(fmt.Sprintf(":%d", a.port), r)

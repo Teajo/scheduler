@@ -5,43 +5,52 @@ import (
 	"jpb/scheduler/config"
 	"jpb/scheduler/publisher"
 	"jpb/scheduler/taskqueue"
-	"net/http"
+	"jpb/scheduler/utils"
 	"time"
 )
 
 // Ctrl represents a scheduler controller
 type Ctrl struct {
-	queue     *taskqueue.TaskQueue
-	publisher *publisher.HTTPPublisher
+	queue    *taskqueue.TaskQueue
+	pubs     *publisher.PubManager
+	taskDone chan *utils.Scheduling
 }
-
-// singleton
-var ctrl *Ctrl = nil
 
 // New creates a scheduler controller
 func New() *Ctrl {
-	c := config.Get()
+	cfg := config.Get()
+	taskDone := make(chan *utils.Scheduling)
+	pubs := publisher.New(taskDone)
+	queue := taskqueue.New(cfg.MaxQueueLen, taskDone)
 
-	if ctrl == nil {
-		ctrl = &Ctrl{
-			queue:     taskqueue.New(c.MaxQueueLen),
-			publisher: publisher.NewHTTPPublisher(http.MethodPost, "http://127.0.0.1:3003/", "{}"),
-		}
+	go pubs.Listen()
+	go queue.Listen()
+
+	return &Ctrl{
+		queue:    queue,
+		pubs:     pubs,
+		taskDone: make(chan *utils.Scheduling),
 	}
-	return ctrl
 }
 
 // Schedule schedules a task
-func (c *Ctrl) Schedule(date *time.Time) (string, error) {
-	fmt.Println("Schedule a task at", date.Format(time.RFC3339))
-	pub := c.publish
-	return c.queue.Add(date, &pub)
+func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
+	fmt.Println("Schedule a task at", scheduling.Date.Format(time.RFC3339Nano))
+	publisher, ok := c.pubs.Get(scheduling.Publisher)
+	if ok {
+		err := publisher.CheckConfig(scheduling.Settings)
+		if err != nil {
+			return "", err
+		}
+
+		return c.queue.Add(scheduling)
+	}
+
+	return "", fmt.Errorf("Publisher %s does not exist", scheduling.Publisher)
 }
 
-func (c *Ctrl) publish(id string) {
-	fmt.Println(fmt.Sprintf("on publish at %s", time.Now().Format(time.RFC3339)))
-	err := c.publisher.Publish()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+func (c *Ctrl) newQueue(length int) *taskqueue.TaskQueue {
+	queue := taskqueue.New(length, c.taskDone)
+	go queue.Listen()
+	return queue
 }
