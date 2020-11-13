@@ -9,37 +9,31 @@ import (
 type Task struct {
 	ID         string
 	Date       time.Time
-	onDone     func(*utils.Scheduling)
+	Scheduling *utils.Scheduling
 	done       bool
-	cancel     *chan interface{}
-	scheduling *utils.Scheduling
+	cancel     chan interface{}
 }
 
 // New creates Task
-func New(scheduling *utils.Scheduling, onDone func(*utils.Scheduling)) *Task {
-	cancel := make(chan interface{})
-
-	t := &Task{
+func New(scheduling *utils.Scheduling) *Task {
+	return &Task{
 		ID:         scheduling.ID,
-		onDone:     onDone,
-		cancel:     &cancel,
+		cancel:     make(chan interface{}),
 		Date:       scheduling.Date,
 		done:       false,
-		scheduling: scheduling,
+		Scheduling: scheduling,
 	}
-
-	go t.doTask()
-	return t
 }
 
 // Cancel cancels task
 func (t *Task) Cancel() {
 	if !t.done {
-		*t.cancel <- struct{}{}
+		t.cancel <- struct{}{}
 	}
 }
 
-func (t *Task) doTask() {
+// Do starts scheduled task
+func (t *Task) Do(onDone func(*utils.Scheduling)) {
 	now := time.Now()
 	duration := t.Date.Sub(now)
 
@@ -47,9 +41,9 @@ func (t *Task) doTask() {
 		select {
 		case <-time.After(duration):
 			t.done = true
-			t.onDone(t.scheduling)
+			onDone(t.Scheduling)
 			return
-		case <-*t.cancel:
+		case <-t.cancel:
 			return
 		}
 	}

@@ -7,6 +7,15 @@ import (
 	"net/http"
 )
 
+// HTTPError is http error
+type HTTPError int
+
+const (
+	resourceError HTTPError = iota
+	networkError
+	noError
+)
+
 // HTTPPublisher represents a http publisher
 type HTTPPublisher struct {
 }
@@ -20,7 +29,7 @@ func New() publisher.Publisher {
 }
 
 // Publish publishes
-func (p *HTTPPublisher) Publish(cfg map[string]string) error {
+func (p *HTTPPublisher) Publish(cfg map[string]string) *publisher.PublishError {
 	method := cfg["method"]
 	url := cfg["url"]
 	json := cfg["json"]
@@ -30,12 +39,21 @@ func (p *HTTPPublisher) Publish(cfg map[string]string) error {
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+	if err != nil {
+		return publisher.NewPublishError(err, true)
+	}
 	resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
-		return errors.New("HTTP status error code")
+	httpError := getHTTPError(resp.StatusCode)
+
+	switch httpError {
+	case networkError:
+		return publisher.NewPublishError(err, true)
+	case resourceError:
+		return publisher.NewPublishError(err, false)
+	default:
+		return nil
 	}
-	return err
 }
 
 // CheckConfig checks publisher config
@@ -56,4 +74,16 @@ func (p *HTTPPublisher) CheckConfig(cfg map[string]string) error {
 	}
 
 	return nil
+}
+
+func getHTTPError(statusCode int) HTTPError {
+	if statusCode >= 500 {
+		return networkError
+	}
+
+	if statusCode >= 400 {
+		return resourceError
+	}
+
+	return noError
 }

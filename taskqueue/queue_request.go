@@ -1,13 +1,5 @@
 package taskqueue
 
-type method string
-
-const (
-	add    method = "add"
-	remove method = "remove"
-	cancel method = "cancel"
-)
-
 // QueueRequest represents a request
 type QueueRequest struct {
 	method  method

@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"jpb/scheduler/config"
+	"jpb/scheduler/db"
 	"jpb/scheduler/publisher"
 	"jpb/scheduler/taskqueue"
 	"jpb/scheduler/utils"
@@ -19,9 +20,11 @@ type Ctrl struct {
 // New creates a scheduler controller
 func New() *Ctrl {
 	cfg := config.Get()
+	db := db.Getdb(cfg.DbDriver)
 	taskDone := make(chan *utils.Scheduling)
 	pubs := publisher.New(taskDone)
-	queue := taskqueue.New(cfg.MaxQueueLen, taskDone)
+	queue := taskqueue.New(db, cfg.MaxQueueLen, taskDone)
+	queue.LoadTasks()
 
 	go pubs.Listen()
 	go queue.Listen()
@@ -51,7 +54,9 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 }
 
 func (c *Ctrl) newQueue(length int) *taskqueue.TaskQueue {
-	queue := taskqueue.New(length, c.taskDone)
+	cfg := config.Get()
+	db := db.Getdb(cfg.DbDriver)
+	queue := taskqueue.New(db, length, c.taskDone)
 	go queue.Listen()
 	return queue
 }

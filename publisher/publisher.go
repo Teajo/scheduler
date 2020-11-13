@@ -3,6 +3,7 @@ package publisher
 import (
 	"fmt"
 	"jpb/scheduler/config"
+	"jpb/scheduler/retry"
 	"jpb/scheduler/utils"
 	"time"
 )
@@ -10,7 +11,7 @@ import (
 // Publisher interface
 type Publisher interface {
 	CheckConfig(map[string]string) error
-	Publish(map[string]string) error
+	Publish(map[string]string) *PublishError
 }
 
 // PubManager is a publisher manager
@@ -34,7 +35,7 @@ func (pm *PubManager) Listen() {
 	fmt.Println("publisher listening for done tasks")
 	for {
 		scheduling := <-pm.taskDone
-		pm.publish(scheduling)
+		go pm.publish(scheduling)
 	}
 }
 
@@ -44,15 +45,21 @@ func (pm *PubManager) Get(id string) (Publisher, bool) {
 	return pub, ok
 }
 
-func (pm *PubManager) publish(scheduling *utils.Scheduling) error {
+func (pm *PubManager) publish(scheduling *utils.Scheduling) {
 	publisher, ok := pm.publishers[scheduling.Publisher]
-	if ok {
-		fmt.Println(fmt.Sprintf("publish to %s at %s", scheduling.Publisher, scheduling.Date.Format(time.RFC3339Nano)))
-		err := publisher.Publish(scheduling.Settings)
-		if err != nil {
-			return err
-		}
-	}
+	strat := scheduling.RetryStrat
 
-	return nil
+	if ok {
+		retry.Do(func() error {
+			fmt.Println(fmt.Sprintf("try publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
+			err := publisher.Publish(scheduling.Settings)
+			if err != nil {
+				fmt.Println(err.Error())
+				if err.ShouldRetry() {
+					return err
+				}
+			}
+			return nil
+		}, strat.Limit, strat.Timeout, strat.Exponential)
+	}
 }

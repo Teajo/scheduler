@@ -18,6 +18,8 @@ type HTTPApiConfig struct {
 // Config is scheduler config
 type Config struct {
 	PluginDir string
+	DbName    string
+	DbDriver  string
 	*QueueConfig
 	*HTTPApiConfig
 }
@@ -37,9 +39,13 @@ func Get() *Config {
 	}
 
 	pluginDir := getenv("PLUGIN_DIR", "./plugins")
+	dbDriver := getenv("DB_DRIVER", "sqlite3")
+	dbName := getenv("DB_NAME", "scheduler")
 
 	if config == nil {
 		config = &Config{
+			DbName:    dbName,
+			DbDriver:  dbDriver,
 			PluginDir: pluginDir,
 			QueueConfig: &QueueConfig{
 				MaxQueueLen: maxQueueLen,

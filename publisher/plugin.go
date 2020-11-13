@@ -27,17 +27,25 @@ func loadPublisherPlugins(dir string) map[string]Publisher {
 
 			p, err := plugin.Open(filepath.Join("plugins", f.Name()))
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println(fmt.Sprintf("%s unable to cast New function, plugin %s will not be added", err.Error(), name))
+				continue
 			}
 
 			new, err := p.Lookup("New")
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Println(fmt.Sprintf("%s unable to cast New function, plugin %s will not be added", err.Error(), name))
+				continue
 			}
 
-			fmt.Println(fmt.Sprintf("added publisher plugin %s", name))
-			publisher := new.(func() Publisher)()
+			newPublisher, ok := new.(func() Publisher)
+			if !ok {
+				fmt.Println(fmt.Sprintf("unable to cast New function, plugin %s will not be added", name))
+				continue
+			}
+
+			publisher := newPublisher()
 			m[name] = publisher
+			fmt.Println(fmt.Sprintf("publisher plugin %s added", name))
 		}
 	}
 
