@@ -3,6 +3,7 @@ package taskqueue
 import (
 	"fmt"
 	"jpb/scheduler/db"
+	"jpb/scheduler/logger"
 	"jpb/scheduler/task"
 	"jpb/scheduler/taskqueue/sortedqueue"
 	"jpb/scheduler/utils"
@@ -37,7 +38,6 @@ func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
 func (q *TaskQueue) LoadTasks() error {
 	tasks := q.db.GetTasks(q.queue.LastID(), q.queue.EmptyLen(), q.queue.LastDate())
 	for _, t := range tasks {
-		fmt.Println("load task", t.ID)
 		q.createTask(t)
 	}
 	return nil
@@ -53,7 +53,7 @@ func (q *TaskQueue) Stop() error {
 
 func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
 	return func(scheduling *utils.Scheduling) {
-		fmt.Println("task done", scheduling.ID)
+		logger.Info("task done", scheduling.ID)
 		q.notifyTaskDone(scheduling)
 		q.ackTask(scheduling.ID)
 		q.LoadTasks()
@@ -65,6 +65,7 @@ func (q *TaskQueue) notifyTaskDone(scheduling *utils.Scheduling) {
 }
 
 func (q *TaskQueue) createTask(scheduling *utils.Scheduling) (string, error) {
+	logger.Info(fmt.Sprintf("create task %s", scheduling.ID))
 	task := task.New(scheduling)
 	go task.Do(q.onTaskDone())
 

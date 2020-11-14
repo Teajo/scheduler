@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"jpb/scheduler/logger"
 	"jpb/scheduler/utils"
 	"time"
 
@@ -37,8 +38,9 @@ func newSqlite3() *sqlite3db {
 
 // GetTasks retrieve nb first tasks
 func (f *sqlite3db) GetTasks(lastuid string, nb int, first time.Time) []*utils.Scheduling {
+	logger.Info(fmt.Sprintf("Get %d tasks after %s different than %s", nb, first.String(), lastuid))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND date >= ? AND uid != ? ORDER BY date ASC LIMIT ?", first, lastuid, nb)
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND DATE(date) >= ? AND uid != ? ORDER BY date ASC LIMIT ?", first, lastuid, nb)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +84,7 @@ func jsonStringToMap(jsonstr string) map[string]string {
 	x := make(map[string]string)
 	err := json.Unmarshal([]byte(jsonstr), &x)
 	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		logger.Error("Error: %s\n", err)
 		return make(map[string]string)
 	}
 	return x

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"jpb/scheduler/controller"
+	"jpb/scheduler/logger"
 	"jpb/scheduler/utils"
 	"net/http"
 	"time"
@@ -35,7 +36,7 @@ func NewHTTPApi(port int, ctrl *controller.Ctrl) *HTTPApi {
 
 // Listen starts listening
 func (a *HTTPApi) Listen() {
-	fmt.Println("http api listening for schedules")
+	logger.Info("http api listening for schedules")
 
 	r := chi.NewRouter()
 
@@ -49,7 +50,7 @@ func (a *HTTPApi) Listen() {
 
 		err := json.NewDecoder(r.Body).Decode(&scheduling)
 		if err != nil {
-			fmt.Println(err.Error())
+			logger.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(errorResponse{Error: "Error with body format"})
 			return
@@ -58,7 +59,7 @@ func (a *HTTPApi) Listen() {
 		layout := "2006-01-02T15:04:05.999Z"
 		t, err := time.Parse(layout, scheduling.Date)
 		if err != nil {
-			fmt.Println(err.Error())
+			logger.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(errorResponse{Error: "Date is not ISO formatted"})
 			return
@@ -66,7 +67,7 @@ func (a *HTTPApi) Listen() {
 
 		id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publisher, scheduling.Settings))
 		if err != nil {
-			fmt.Println(err.Error())
+			logger.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(errorResponse{Error: err.Error()})
 			return

@@ -2,3 +2,5 @@
 *.so
 ./scheduler
 ./scheduler.db
+scheduler
+scheduler.db

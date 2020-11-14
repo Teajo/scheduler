@@ -3,6 +3,7 @@ package publisher
 import (
 	"fmt"
 	"jpb/scheduler/config"
+	"jpb/scheduler/logger"
 	"jpb/scheduler/retry"
 	"jpb/scheduler/utils"
 	"time"
@@ -41,7 +42,7 @@ func (pm *PubManager) Get(id string) (Publisher, bool) {
 
 // Listen listens for done tasks
 func (pm *PubManager) listen() {
-	fmt.Println("publisher listening for done tasks")
+	logger.Info("publisher listening for done tasks")
 	for {
 		scheduling := <-pm.taskDone
 		go pm.publish(scheduling)
@@ -54,10 +55,10 @@ func (pm *PubManager) publish(scheduling *utils.Scheduling) {
 
 	if ok {
 		retry.Do(func() error {
-			fmt.Println(fmt.Sprintf("try publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
+			logger.Info(fmt.Sprintf("try publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
 			err := publisher.Publish(scheduling.Settings)
 			if err != nil {
-				fmt.Println(err.Error())
+				logger.Error(err.Error())
 				if err.ShouldRetry() {
 					return err
 				}

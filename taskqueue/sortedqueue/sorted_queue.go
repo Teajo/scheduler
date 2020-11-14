@@ -2,7 +2,7 @@ package sortedqueue
 
 import (
 	"errors"
-	"fmt"
+	"jpb/scheduler/logger"
 	"jpb/scheduler/task"
 	"sort"
 	"time"
@@ -169,7 +169,7 @@ func (sq *SortedQueue) lastDate() time.Time {
 
 // Listen make sortedqueue listening for task events
 func (sq *SortedQueue) listen() {
-	fmt.Println("taskqueue listening for task events")
+	logger.Info("taskqueue listening for task events")
 	for {
 		r := <-sq.listener
 		switch r.method {
