@@ -24,25 +24,28 @@ type PubManager struct {
 func New(taskDone chan *utils.Scheduling) *PubManager {
 	pubs := loadPublisherPlugins(config.Get().PluginDir)
 
-	return &PubManager{
+	pm := &PubManager{
 		taskDone:   taskDone,
 		publishers: pubs,
 	}
-}
 
-// Listen listens for done tasks
-func (pm *PubManager) Listen() {
-	fmt.Println("publisher listening for done tasks")
-	for {
-		scheduling := <-pm.taskDone
-		go pm.publish(scheduling)
-	}
+	go pm.listen()
+	return pm
 }
 
 // Get retrieves a publisher according to provided id
 func (pm *PubManager) Get(id string) (Publisher, bool) {
 	pub, ok := pm.publishers[id]
 	return pub, ok
+}
+
+// Listen listens for done tasks
+func (pm *PubManager) listen() {
+	fmt.Println("publisher listening for done tasks")
+	for {
+		scheduling := <-pm.taskDone
+		go pm.publish(scheduling)
+	}
 }
 
 func (pm *PubManager) publish(scheduling *utils.Scheduling) {

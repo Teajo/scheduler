@@ -3,11 +3,12 @@ package db
 import (
 	"fmt"
 	"jpb/scheduler/utils"
+	"time"
 )
 
 // Taskdb is taskdb
 type Taskdb interface {
-	GetFirstTasks(int) []*utils.Scheduling
+	GetTasks(string, int, time.Time) []*utils.Scheduling
 	StoreTask(*utils.Scheduling) error
 	AckTask(string) error
 	RemoveTask(string) error

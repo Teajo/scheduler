@@ -26,9 +26,6 @@ func New() *Ctrl {
 	queue := taskqueue.New(db, cfg.MaxQueueLen, taskDone)
 	queue.LoadTasks()
 
-	go pubs.Listen()
-	go queue.Listen()
-
 	return &Ctrl{
 		queue:    queue,
 		pubs:     pubs,
@@ -57,6 +54,5 @@ func (c *Ctrl) newQueue(length int) *taskqueue.TaskQueue {
 	cfg := config.Get()
 	db := db.Getdb(cfg.DbDriver)
 	queue := taskqueue.New(db, length, c.taskDone)
-	go queue.Listen()
 	return queue
 }

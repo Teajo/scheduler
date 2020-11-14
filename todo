@@ -1,4 +1,3 @@
-- write sqlite3 db
 - Dockerfile
 - extend tests
 - change API to create queues

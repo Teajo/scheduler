@@ -18,10 +18,10 @@ type Task struct {
 func New(scheduling *utils.Scheduling) *Task {
 	return &Task{
 		ID:         scheduling.ID,
-		cancel:     make(chan interface{}),
 		Date:       scheduling.Date,
-		done:       false,
 		Scheduling: scheduling,
+		done:       false,
+		cancel:     make(chan interface{}),
 	}
 }
 

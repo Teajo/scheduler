@@ -20,7 +20,7 @@ func newSqlite3() *sqlite3db {
 		panic(err.Error())
 	}
 
-	query, err := conn.Prepare("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, uid TEXT NOT NULL UNIQUE, date DATETIME, publisher TEXT, settings TEXT)")
+	query, err := conn.Prepare(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, uid TEXT NOT NULL UNIQUE, date DATETIME, publisher TEXT, settings TEXT, done INTEGER DEFAULT 0)`)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -35,20 +35,22 @@ func newSqlite3() *sqlite3db {
 	}
 }
 
-// GetFirstTasks retrieve nb first tasks
-func (f *sqlite3db) GetFirstTasks(nb int) []*utils.Scheduling {
+// GetTasks retrieve nb first tasks
+func (f *sqlite3db) GetTasks(lastuid string, nb int, first time.Time) []*utils.Scheduling {
+	fmt.Println("Get nb tasks", nb)
 	tasks := []*utils.Scheduling{}
-	rows, _ := f.conn.Query("SELECT * FROM tasks")
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND date >= ? AND uid != ? ORDER BY date ASC LIMIT ?", first, lastuid, nb)
+	if err != nil {
+		panic(err)
+	}
 
-	var id int
 	var uid string
 	var date string
 	var publisher string
 	var settings string
 
 	for rows.Next() {
-		rows.Scan(&id, &uid, &date, &publisher, &settings)
-		fmt.Println(uid + " " + date)
+		rows.Scan(&uid, &date, &publisher, &settings)
 		d, _ := time.Parse(time.RFC3339Nano, date)
 		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings)))
 	}
@@ -64,13 +66,15 @@ func (f *sqlite3db) StoreTask(t *utils.Scheduling) error {
 }
 
 // AckTask blabla
-func (f *sqlite3db) AckTask(string) error {
-	return nil
+func (f *sqlite3db) AckTask(id string) error {
+	query, err := f.conn.Prepare("UPDATE tasks SET done = 1 WHERE uid = ?")
+	_, err = query.Exec(id)
+	return err
 }
 
 // RemoveTask blabla
 func (f *sqlite3db) RemoveTask(id string) error {
-	query, err := f.conn.Prepare("DELETE FROM tasks WHERE uid = ?")
+	query, err := f.conn.Prepare("UPDATE tasks SET done = 1 WHERE uid = ?")
 	_, err = query.Exec(id)
 	return err
 }
