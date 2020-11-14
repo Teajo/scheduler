@@ -1,2 +1,4 @@
 !.gitkeep
 *.so
+./scheduler
+./scheduler.db
