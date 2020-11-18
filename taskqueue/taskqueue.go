@@ -36,7 +36,13 @@ func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
 	if err != nil {
 		return scheduling.ID, err
 	}
-	return q.createTask(scheduling)
+
+	id, err := q.createTask(scheduling)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	return id, nil
 }
 
 // LoadTasks loads tasks from db

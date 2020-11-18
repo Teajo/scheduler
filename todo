@@ -1,3 +1,4 @@
 - Dockerfile
 - extend tests
+- queue maxLength
 - change API to create queues ? 

@@ -13,6 +13,7 @@ import (
 
 // Ctrl represents a scheduler controller
 type Ctrl struct {
+	db       db.Taskdb
 	queue    *taskqueue.TaskQueue
 	pubs     *publisher.PubManager
 	taskDone chan *utils.Scheduling
@@ -28,6 +29,7 @@ func New() *Ctrl {
 	queue.LoadTasks()
 
 	return &Ctrl{
+		db:       db,
 		queue:    queue,
 		pubs:     pubs,
 		taskDone: make(chan *utils.Scheduling),
@@ -49,4 +51,9 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 	}
 
 	return "", fmt.Errorf("Publisher %s does not exist", scheduling.Publisher)
+}
+
+// GetTasks returns tasks from db
+func (c *Ctrl) GetTasks(endDate time.Time) []*utils.Scheduling {
+	return c.db.GetTasks(endDate)
 }

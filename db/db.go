@@ -8,9 +8,16 @@ import (
 
 // Taskdb is taskdb
 type Taskdb interface {
+	// Get tasks scheduled before provided end date
 	GetTasks(time.Time) []*utils.Scheduling
+
+	// Store task scheduling
 	StoreTask(*utils.Scheduling) error
+
+	// Ack task by ID
 	AckTask(string) error
+
+	// Remove a task by ID
 	RemoveTask(string) error
 }
 

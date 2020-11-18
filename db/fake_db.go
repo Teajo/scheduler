@@ -5,11 +5,9 @@ import (
 	"time"
 )
 
-// fakedb represents a fake db
 type fakedb struct {
 }
 
-// NewFakedb creates a new fake db
 func newFakedb() *fakedb {
 	return &fakedb{}
 }

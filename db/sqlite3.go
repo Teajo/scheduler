@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/utils"
+	"sync"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3" // sqlite3
@@ -13,6 +14,7 @@ import (
 
 type sqlite3db struct {
 	conn *sql.DB
+	mu   sync.Mutex
 }
 
 func newSqlite3() *sqlite3db {
@@ -36,11 +38,13 @@ func newSqlite3() *sqlite3db {
 	}
 }
 
-// GetTasks retrieve nb first tasks
 func (f *sqlite3db) GetTasks(end time.Time) []*utils.Scheduling {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND DATE(date) <= ? ORDER BY date ASC", end)
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND datetime(date) <= datetime(?) ORDER BY date ASC", end)
 	if err != nil {
 		panic(err)
 	}
@@ -59,22 +63,28 @@ func (f *sqlite3db) GetTasks(end time.Time) []*utils.Scheduling {
 	return tasks
 }
 
-// StoreTask blabla
 func (f *sqlite3db) StoreTask(t *utils.Scheduling) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	query, err := f.conn.Prepare("INSERT INTO tasks (uid, date, publisher, settings) VALUES (?, ?, ?, ?)")
 	_, err = query.Exec(t.ID, t.Date.Format(time.RFC3339Nano), t.Publisher, mapToJSONString(t.Settings))
 	return err
 }
 
-// AckTask blabla
 func (f *sqlite3db) AckTask(id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	query, err := f.conn.Prepare("UPDATE tasks SET done = 1 WHERE uid = ?")
 	_, err = query.Exec(id)
 	return err
 }
 
-// RemoveTask blabla
 func (f *sqlite3db) RemoveTask(id string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	query, err := f.conn.Prepare("UPDATE tasks SET done = 1 WHERE uid = ?")
 	_, err = query.Exec(id)
 	return err
