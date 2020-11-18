@@ -37,10 +37,10 @@ func newSqlite3() *sqlite3db {
 }
 
 // GetTasks retrieve nb first tasks
-func (f *sqlite3db) GetTasks(lastuid string, nb int, first time.Time) []*utils.Scheduling {
-	logger.Info(fmt.Sprintf("Get %d tasks after %s different than %s", nb, first.String(), lastuid))
+func (f *sqlite3db) GetTasks(end time.Time) []*utils.Scheduling {
+	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND DATE(date) >= ? AND uid != ? ORDER BY date ASC LIMIT ?", first, lastuid, nb)
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND DATE(date) <= ? ORDER BY date ASC", end)
 	if err != nil {
 		panic(err)
 	}

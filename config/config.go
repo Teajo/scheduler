@@ -3,11 +3,13 @@ package config
 import (
 	"os"
 	"strconv"
+	"time"
 )
 
 // QueueConfig is queue config
 type QueueConfig struct {
 	MaxQueueLen int
+	TimeChunk   time.Duration
 }
 
 // HTTPApiConfig is http api config
@@ -39,6 +41,11 @@ func Get() *Config {
 			panic(err)
 		}
 
+		ms, err := strconv.Atoi(getenv("QUEUE_TIME_CHUNK", "21600000")) // default 6hours
+		if err != nil {
+			panic(err)
+		}
+
 		pluginDir := getenv("PLUGIN_DIR", "./plugins")
 		dbDriver := getenv("DB_DRIVER", "sqlite3")
 		dbName := getenv("DB_NAME", "scheduler")
@@ -49,6 +56,7 @@ func Get() *Config {
 			PluginDir: pluginDir,
 			QueueConfig: &QueueConfig{
 				MaxQueueLen: maxQueueLen,
+				TimeChunk:   time.Duration(ms) * time.Millisecond,
 			},
 			HTTPApiConfig: &HTTPApiConfig{
 				Port: port,

@@ -8,7 +8,7 @@ import (
 
 // Taskdb is taskdb
 type Taskdb interface {
-	GetTasks(string, int, time.Time) []*utils.Scheduling
+	GetTasks(time.Time) []*utils.Scheduling
 	StoreTask(*utils.Scheduling) error
 	AckTask(string) error
 	RemoveTask(string) error

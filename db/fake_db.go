@@ -14,7 +14,7 @@ func newFakedb() *fakedb {
 	return &fakedb{}
 }
 
-func (f *fakedb) GetTasks(lastuid string, nb int, first time.Time) []*utils.Scheduling {
+func (f *fakedb) GetTasks(end time.Time) []*utils.Scheduling {
 	return []*utils.Scheduling{}
 }
 

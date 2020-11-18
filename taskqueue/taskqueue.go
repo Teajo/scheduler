@@ -5,23 +5,28 @@ import (
 	"jpb/scheduler/db"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/task"
-	"jpb/scheduler/taskqueue/sortedqueue"
+	"jpb/scheduler/taskqueue/queue"
 	"jpb/scheduler/utils"
+	"time"
 )
+
+var lastDate time.Time = time.Unix(1<<63-62135596801, 999999999)
 
 // TaskQueue represents a queue of tasks
 type TaskQueue struct {
-	db       db.Taskdb
-	queue    *sortedqueue.SortedQueue
-	taskDone chan *utils.Scheduling
+	db        db.Taskdb
+	queue     *queue.Queue
+	timeChunk time.Duration
+	taskDone  chan *utils.Scheduling
 }
 
 // New creates a new taskqueue
-func New(db db.Taskdb, maxLen int, taskDone chan *utils.Scheduling) *TaskQueue {
+func New(db db.Taskdb, taskDone chan *utils.Scheduling, timeChunk time.Duration) *TaskQueue {
 	return &TaskQueue{
-		db:       db,
-		queue:    sortedqueue.New(maxLen),
-		taskDone: taskDone,
+		db:        db,
+		queue:     queue.New(lastDate),
+		timeChunk: timeChunk,
+		taskDone:  taskDone,
 	}
 }
 
@@ -35,20 +40,19 @@ func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
 }
 
 // LoadTasks loads tasks from db
-func (q *TaskQueue) LoadTasks() error {
-	tasks := q.db.GetTasks(q.queue.LastID(), q.queue.EmptyLen(), q.queue.LastDate())
-	for _, t := range tasks {
-		q.createTask(t)
-	}
-	return nil
-}
+func (q *TaskQueue) LoadTasks() {
+	now := time.Now()
+	nextEnd := q.getNextEnd(now).Add(time.Second)
+	q.queue.UpdateEnd(nextEnd)
+	setTimer(now.Add(q.timeChunk).Sub(now), q.LoadTasks)
 
-// Stop stops task queue
-func (q *TaskQueue) Stop() error {
-	for _, t := range q.queue.Get() {
-		t.Cancel()
+	tasks := q.db.GetTasks(nextEnd)
+	for _, t := range tasks {
+		_, err := q.createTask(t)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 	}
-	return nil
 }
 
 func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
@@ -56,7 +60,6 @@ func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
 		logger.Info("task done", scheduling.ID)
 		q.notifyTaskDone(scheduling)
 		q.ackTask(scheduling.ID)
-		q.LoadTasks()
 	}
 }
 
@@ -65,14 +68,16 @@ func (q *TaskQueue) notifyTaskDone(scheduling *utils.Scheduling) {
 }
 
 func (q *TaskQueue) createTask(scheduling *utils.Scheduling) (string, error) {
-	logger.Info(fmt.Sprintf("create task %s", scheduling.ID))
 	task := task.New(scheduling)
+
+	err := q.queue.Add(task)
+	if err != nil {
+		return task.ID, err
+	}
+
 	go task.Do(q.onTaskDone())
 
-	tasks := q.queue.Add(task)
-	for _, t := range tasks {
-		t.Cancel()
-	}
+	logger.Info(fmt.Sprintf("task %s created", scheduling.ID))
 
 	return task.ID, nil
 }
@@ -83,6 +88,17 @@ func (q *TaskQueue) ackTask(id string) error {
 		return err
 	}
 
-	err = q.queue.RemoveByID(id)
+	err = q.queue.Remove(id)
 	return err
+}
+
+func (q *TaskQueue) getNextEnd(now time.Time) time.Time {
+	return now.Add(q.timeChunk)
+}
+
+func setTimer(delay time.Duration, cb func()) {
+	go func() {
+		<-time.After(delay)
+		cb()
+	}()
 }

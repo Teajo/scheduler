@@ -18,5 +18,5 @@ func Do(f func() error, limit int, timeout time.Duration, exponential bool) erro
 		}
 		return nil
 	}
-	return errors.New("Unable do execute task despite all retries")
+	return errors.New("Unable to execute task despite all retries")
 }

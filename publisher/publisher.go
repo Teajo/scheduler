@@ -55,7 +55,7 @@ func (pm *PubManager) publish(scheduling *utils.Scheduling) {
 
 	if ok {
 		retry.Do(func() error {
-			logger.Info(fmt.Sprintf("try publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
+			logger.Info(fmt.Sprintf("try to publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
 			err := publisher.Publish(scheduling.Settings)
 			if err != nil {
 				logger.Error(err.Error())

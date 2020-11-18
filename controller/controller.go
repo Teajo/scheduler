@@ -24,7 +24,7 @@ func New() *Ctrl {
 	db := db.Getdb(cfg.DbDriver)
 	taskDone := make(chan *utils.Scheduling)
 	pubs := publisher.New(taskDone)
-	queue := taskqueue.New(db, cfg.MaxQueueLen, taskDone)
+	queue := taskqueue.New(db, taskDone, cfg.TimeChunk)
 	queue.LoadTasks()
 
 	return &Ctrl{
@@ -49,11 +49,4 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 	}
 
 	return "", fmt.Errorf("Publisher %s does not exist", scheduling.Publisher)
-}
-
-func (c *Ctrl) newQueue(length int) *taskqueue.TaskQueue {
-	cfg := config.Get()
-	db := db.Getdb(cfg.DbDriver)
-	queue := taskqueue.New(db, length, c.taskDone)
-	return queue
 }

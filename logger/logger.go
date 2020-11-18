@@ -6,7 +6,7 @@ import (
 )
 
 // Info info logger
-var Info = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile).Println
+var Info = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime).Println
 
 // Warn warning logger
 var Warn = log.New(os.Stdout, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile).Println
