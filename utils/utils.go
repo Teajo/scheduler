@@ -17,19 +17,19 @@ type RetryStrat struct {
 type Scheduling struct {
 	ID          string            `json:"id"`
 	Date        time.Time         `json:"date"`
-	Publisher   string            `json:"publisher"`
+	Publishers  []string          `json:"publishers"`
 	Settings    map[string]string `json:"settings"`
 	Done        bool              `json:"done"`
 	*RetryStrat `json:"retryStrategy"`
 }
 
 // NewScheduling creates a new scheduling struct
-func NewScheduling(date time.Time, publisher string, settings map[string]string) *Scheduling {
+func NewScheduling(date time.Time, publishers []string, settings map[string]string) *Scheduling {
 	return &Scheduling{
-		ID:        uuid.New().String(),
-		Date:      date,
-		Publisher: publisher,
-		Settings:  settings,
+		ID:         uuid.New().String(),
+		Date:       date,
+		Publishers: publishers,
+		Settings:   settings,
 		RetryStrat: &RetryStrat{
 			Timeout:     25 * time.Millisecond,
 			Exponential: true,
@@ -39,13 +39,13 @@ func NewScheduling(date time.Time, publisher string, settings map[string]string)
 }
 
 // NewSchedulingWithID creates a new scheduling struct
-func NewSchedulingWithID(id string, date time.Time, publisher string, settings map[string]string, done bool) *Scheduling {
+func NewSchedulingWithID(id string, date time.Time, publishers []string, settings map[string]string, done bool) *Scheduling {
 	return &Scheduling{
-		ID:        id,
-		Date:      date,
-		Publisher: publisher,
-		Settings:  settings,
-		Done:      done,
+		ID:         id,
+		Date:       date,
+		Publishers: publishers,
+		Settings:   settings,
+		Done:       done,
 		RetryStrat: &RetryStrat{
 			Timeout:     25 * time.Millisecond,
 			Exponential: true,

@@ -45,25 +45,27 @@ func (pm *PubManager) listen() {
 	logger.Info("publisher listening for done tasks")
 	for {
 		scheduling := <-pm.taskDone
-		go pm.publish(scheduling)
+		pm.publish(scheduling)
 	}
 }
 
 func (pm *PubManager) publish(scheduling *utils.Scheduling) {
-	publisher, ok := pm.publishers[scheduling.Publisher]
-	strat := scheduling.RetryStrat
+	for _, p := range scheduling.Publishers {
+		publisher, ok := pm.publishers[p]
+		strat := scheduling.RetryStrat
 
-	if ok {
-		retry.Do(func() error {
-			logger.Info(fmt.Sprintf("try to publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
-			err := publisher.Publish(scheduling.Settings)
-			if err != nil {
-				logger.Error(err.Error())
-				if err.ShouldRetry() {
-					return err
+		if ok {
+			go retry.Do(func() error {
+				logger.Info(fmt.Sprintf("try to publish to %s at %s", p, time.Now().Format(time.RFC3339Nano)))
+				err := publisher.Publish(scheduling.Settings)
+				if err != nil {
+					logger.Error(err.Error())
+					if err.ShouldRetry() {
+						return err
+					}
 				}
-			}
-			return nil
-		}, strat.Limit, strat.Timeout, strat.Exponential)
+				return nil
+			}, strat.Limit, strat.Timeout, strat.Exponential)
+		}
 	}
 }
