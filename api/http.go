@@ -7,6 +7,7 @@ import (
 	"jpb/scheduler/logger"
 	"jpb/scheduler/utils"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -59,15 +60,25 @@ func (a *HTTPApi) onPing(w http.ResponseWriter, r *http.Request) {
 
 func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	dateString := r.URL.Query().Get("endDate")
-	d, err := time.Parse(time.RFC3339Nano, dateString)
+
+	startStr := getQueryValue(r.URL.Query(), "startDate", []string{utils.FirstDate.Format(time.RFC3339Nano)})
+	endStr := getQueryValue(r.URL.Query(), "endDate", []string{utils.LastDate.Format(time.RFC3339Nano)})
+
+	end, err := time.Parse(time.RFC3339Nano, endStr[0])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(errorResponse{Error: "Date query is not ISO formatted"})
+		json.NewEncoder(w).Encode(errorResponse{Error: "End date query is not ISO formatted"})
 		return
 	}
 
-	tasks := a.ctrl.GetTasks(d)
+	start, err := time.Parse(time.RFC3339Nano, startStr[0])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse{Error: "Start date query is not ISO formatted"})
+		return
+	}
+
+	tasks := a.ctrl.GetTasks(start, end)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(tasksResponse{Data: tasks})
 }
@@ -103,4 +114,12 @@ func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse{Message: fmt.Sprintf("Task %s created", id)})
+}
+
+func getQueryValue(query url.Values, key string, dflt []string) []string {
+	v, ok := query[key]
+	if !ok {
+		v = dflt
+	}
+	return v
 }

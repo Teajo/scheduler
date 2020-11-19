@@ -1,4 +1,7 @@
 - Dockerfile
 - extend tests
 - queue maxLength
+- CRUD tasks
+- write full http API
+- frontend
 - change API to create queues ? 

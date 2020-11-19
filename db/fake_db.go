@@ -12,7 +12,11 @@ func newFakedb() *fakedb {
 	return &fakedb{}
 }
 
-func (f *fakedb) GetTasks(end time.Time) []*utils.Scheduling {
+func (f *fakedb) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
+	return []*utils.Scheduling{}
+}
+
+func (f *fakedb) GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling {
 	return []*utils.Scheduling{}
 }
 

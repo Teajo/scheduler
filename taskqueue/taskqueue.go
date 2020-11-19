@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-var lastDate time.Time = time.Unix(1<<63-62135596801, 999999999)
-
 // TaskQueue represents a queue of tasks
 type TaskQueue struct {
 	db        db.Taskdb
@@ -24,7 +22,7 @@ type TaskQueue struct {
 func New(db db.Taskdb, taskDone chan *utils.Scheduling, timeChunk time.Duration) *TaskQueue {
 	return &TaskQueue{
 		db:        db,
-		queue:     queue.New(lastDate),
+		queue:     queue.New(utils.LastDate),
 		timeChunk: timeChunk,
 		taskDone:  taskDone,
 	}
@@ -52,7 +50,7 @@ func (q *TaskQueue) LoadTasks() {
 	q.queue.UpdateEnd(nextEnd)
 	setTimer(now.Add(q.timeChunk).Sub(now), q.LoadTasks)
 
-	tasks := q.db.GetTasks(nextEnd)
+	tasks := q.db.GetTasksToDo(utils.FirstDate, nextEnd)
 	for _, t := range tasks {
 		_, err := q.createTask(t)
 		if err != nil {

@@ -54,6 +54,6 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 }
 
 // GetTasks returns tasks from db
-func (c *Ctrl) GetTasks(endDate time.Time) []*utils.Scheduling {
-	return c.db.GetTasks(endDate)
+func (c *Ctrl) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
+	return c.db.GetTasks(start, end)
 }

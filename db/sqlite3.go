@@ -38,13 +38,39 @@ func newSqlite3() *sqlite3db {
 	}
 }
 
-func (f *sqlite3db) GetTasks(end time.Time) []*utils.Scheduling {
+func (f *sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE done = 0 AND datetime(date) <= datetime(?) ORDER BY date ASC", end)
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings, done FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) ORDER BY date ASC", start, end)
+	if err != nil {
+		panic(err)
+	}
+
+	var uid string
+	var date string
+	var publisher string
+	var settings string
+	var done bool
+
+	for rows.Next() {
+		rows.Scan(&uid, &date, &publisher, &settings, &done)
+		d, _ := time.Parse(time.RFC3339Nano, date)
+		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings), done))
+	}
+
+	return tasks
+}
+
+func (f *sqlite3db) GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
+	tasks := []*utils.Scheduling{}
+	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", start, end)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +83,7 @@ func (f *sqlite3db) GetTasks(end time.Time) []*utils.Scheduling {
 	for rows.Next() {
 		rows.Scan(&uid, &date, &publisher, &settings)
 		d, _ := time.Parse(time.RFC3339Nano, date)
-		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings)))
+		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings), false))
 	}
 
 	return tasks

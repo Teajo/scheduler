@@ -8,18 +8,19 @@ import (
 
 // RetryStrat represents a retry strategy
 type RetryStrat struct {
-	Timeout     time.Duration
-	Exponential bool
-	Limit       int
+	Timeout     time.Duration `json:"timeout"`
+	Exponential bool          `json:"exponential"`
+	Limit       int           `json:"limit"`
 }
 
 // Scheduling represents a scheduling object
 type Scheduling struct {
-	ID        string
-	Date      time.Time
-	Publisher string
-	Settings  map[string]string
-	*RetryStrat
+	ID          string            `json:"id"`
+	Date        time.Time         `json:"date"`
+	Publisher   string            `json:"publisher"`
+	Settings    map[string]string `json:"settings"`
+	Done        bool              `json:"done"`
+	*RetryStrat `json:"retryStrategy"`
 }
 
 // NewScheduling creates a new scheduling struct
@@ -38,12 +39,13 @@ func NewScheduling(date time.Time, publisher string, settings map[string]string)
 }
 
 // NewSchedulingWithID creates a new scheduling struct
-func NewSchedulingWithID(id string, date time.Time, publisher string, settings map[string]string) *Scheduling {
+func NewSchedulingWithID(id string, date time.Time, publisher string, settings map[string]string, done bool) *Scheduling {
 	return &Scheduling{
 		ID:        id,
 		Date:      date,
 		Publisher: publisher,
 		Settings:  settings,
+		Done:      done,
 		RetryStrat: &RetryStrat{
 			Timeout:     25 * time.Millisecond,
 			Exponential: true,
@@ -51,3 +53,9 @@ func NewSchedulingWithID(id string, date time.Time, publisher string, settings m
 		},
 	}
 }
+
+// LastDate last possible date
+var LastDate time.Time = time.Unix(1<<63-62135596801, 999999999)
+
+// FirstDate first possible date
+var FirstDate time.Time = time.Time{}

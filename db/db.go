@@ -9,7 +9,10 @@ import (
 // Taskdb is taskdb
 type Taskdb interface {
 	// Get tasks scheduled before provided end date
-	GetTasks(time.Time) []*utils.Scheduling
+	GetTasks(start time.Time, end time.Time) []*utils.Scheduling
+
+	// Returns tasks to do
+	GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling
 
 	// Store task scheduling
 	StoreTask(*utils.Scheduling) error
