@@ -17,11 +17,12 @@ func New() publisher.Publisher {
 }
 
 // Publish publishes
-func (p *TestPublisher) Publish(cfg map[string]string) *publisher.PublishError {
+func (p *TestPublisher) Publish(cfg map[string]interface{}) *publisher.PublishError {
 	return nil
 }
 
-// CheckConfig checks publisher config
-func (p *TestPublisher) CheckConfig(cfg map[string]string) error {
-	return nil
+// GetConfigDef returns needed config for this publisher
+func (p *TestPublisher) GetConfigDef() map[string]*publisher.ConfigValueDef {
+	m := make(map[string]*publisher.ConfigValueDef)
+	return m
 }

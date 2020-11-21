@@ -15,9 +15,9 @@ type RetryStrat struct {
 
 // Publisher represents a publisher
 type Publisher struct {
-	Publisher  string            `json:"publisher"`
-	Settings   map[string]string `json:"settings"`
-	RetryStrat *RetryStrat       `json:"retryStrategy"`
+	Publisher  string                 `json:"publisher"`
+	Settings   map[string]interface{} `json:"settings"`
+	RetryStrat *RetryStrat            `json:"retryStrategy"`
 }
 
 // Scheduling represents a scheduling object

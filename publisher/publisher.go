@@ -9,10 +9,28 @@ import (
 	"time"
 )
 
+// ValueType is config key value type
+type ValueType string
+
+const (
+	STRING      ValueType = "STRING"
+	JSON_STRING ValueType = "JSON_STRING"
+	INT         ValueType = "INT"
+	BOOL        ValueType = "BOOL"
+)
+
+// ConfigValueDef config value def
+type ConfigValueDef struct {
+	Type     ValueType
+	Default  interface{}
+	Possible interface{}
+	Required bool
+}
+
 // Publisher interface
 type Publisher interface {
-	CheckConfig(map[string]string) error
-	Publish(map[string]string) *PublishError
+	Publish(map[string]interface{}) *PublishError
+	GetConfigDef() map[string]*ConfigValueDef
 }
 
 // PubManager is a publisher manager

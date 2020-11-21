@@ -45,6 +45,11 @@ func loadPublisherPlugins(dir string) map[string]Publisher {
 			}
 
 			publisher := newPublisher()
+			err = checkPluginValidity(publisher)
+			if err != nil {
+				panic(err)
+			}
+
 			m[name] = publisher
 			logger.Info(fmt.Sprintf("publisher plugin %s added", name))
 		}

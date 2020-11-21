@@ -29,10 +29,21 @@ func New() publisher.Publisher {
 }
 
 // Publish publishes
-func (p *HTTPPublisher) Publish(cfg map[string]string) *publisher.PublishError {
-	method := cfg["method"]
-	url := cfg["url"]
-	json := cfg["json"]
+func (p *HTTPPublisher) Publish(cfg map[string]interface{}) *publisher.PublishError {
+	method, ok := cfg["method"].(string)
+	if !ok {
+		panic(errors.New("field 'method' has incorrect type"))
+	}
+
+	url, ok := cfg["url"].(string)
+	if !ok {
+		panic(errors.New("field 'url' has incorrect type"))
+	}
+
+	json, ok := cfg["json"].(string)
+	if !ok {
+		panic(errors.New("field 'json' has incorrect type"))
+	}
 
 	req, err := http.NewRequest(method, url, bytes.NewBuffer([]byte(json)))
 	req.Header.Set("Content-Type", "application/json")
@@ -56,24 +67,13 @@ func (p *HTTPPublisher) Publish(cfg map[string]string) *publisher.PublishError {
 	}
 }
 
-// CheckConfig checks publisher config
-func (p *HTTPPublisher) CheckConfig(cfg map[string]string) error {
-	method := cfg["method"]
-	if method != http.MethodPost && method != http.MethodPut {
-		return errors.New("Http method must be POST or PUT")
-	}
-
-	_, urlOk := cfg["url"]
-	if !urlOk {
-		return errors.New("Must provide an url in url field")
-	}
-
-	_, jsonOk := cfg["json"]
-	if !jsonOk {
-		return errors.New("Must provide a json field")
-	}
-
-	return nil
+// GetConfigDef returns needed config for this publisher
+func (p *HTTPPublisher) GetConfigDef() map[string]*publisher.ConfigValueDef {
+	m := make(map[string]*publisher.ConfigValueDef)
+	m["method"] = &publisher.ConfigValueDef{Required: true, Possible: []string{"POST", "PUT"}, Default: "", Type: publisher.STRING}
+	m["url"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.STRING}
+	m["json"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.JSON_STRING}
+	return m
 }
 
 func getHTTPError(statusCode int) HTTPError {

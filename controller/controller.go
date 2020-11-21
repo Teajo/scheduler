@@ -40,13 +40,13 @@ func New() *Ctrl {
 func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 	logger.Info("Schedule a task at", scheduling.Date.Format(time.RFC3339Nano))
 
-	for _, pub := range scheduling.Publishers {
-		publisher, ok := c.pubs.Get(pub.Publisher)
+	for _, publ := range scheduling.Publishers {
+		pub, ok := c.pubs.Get(publ.Publisher)
 		if !ok {
-			return "", fmt.Errorf("Publisher %s does not exist", pub.Publisher)
+			return "", fmt.Errorf("Publisher %s does not exist", publ.Publisher)
 		}
 
-		err := publisher.CheckConfig(pub.Settings)
+		err := publisher.CheckConfig(pub, publ.Settings)
 		if err != nil {
 			return "", err
 		}
