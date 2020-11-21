@@ -23,7 +23,7 @@ func newSqlite3() *sqlite3db {
 		panic(err.Error())
 	}
 
-	query, err := conn.Prepare(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, uid TEXT NOT NULL UNIQUE, date DATETIME, publisher TEXT, settings TEXT, done INTEGER DEFAULT 0)`)
+	query, err := conn.Prepare(`CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, uid TEXT NOT NULL UNIQUE, date DATETIME, publishers TEXT, done INTEGER DEFAULT 0)`)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -44,21 +44,22 @@ func (f *sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling
 
 	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings, done FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) ORDER BY date ASC", start, end)
+	rows, err := f.conn.Query("SELECT uid, date, publishers, done FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) ORDER BY date ASC", start, end)
 	if err != nil {
 		panic(err)
 	}
 
 	var uid string
 	var date string
-	var publisher string
-	var settings string
+	var publishers string
 	var done bool
 
 	for rows.Next() {
-		rows.Scan(&uid, &date, &publisher, &settings, &done)
+		var pubs []*utils.Publisher
+		rows.Scan(&uid, &date, &publishers, &done)
+		json.Unmarshal([]byte(publishers), &pubs)
 		d, _ := time.Parse(time.RFC3339Nano, date)
-		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings), done))
+		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, pubs, done))
 	}
 
 	return tasks
@@ -70,20 +71,21 @@ func (f *sqlite3db) GetTasksToDo(start time.Time, end time.Time) []*utils.Schedu
 
 	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publisher, settings FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", start, end)
+	rows, err := f.conn.Query("SELECT uid, date, publishers FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", start, end)
 	if err != nil {
 		panic(err)
 	}
 
 	var uid string
 	var date string
-	var publisher string
-	var settings string
+	var publishers string
 
 	for rows.Next() {
-		rows.Scan(&uid, &date, &publisher, &settings)
+		var pubs []*utils.Publisher
+		rows.Scan(&uid, &date, &publishers)
+		json.Unmarshal([]byte(publishers), &pubs)
 		d, _ := time.Parse(time.RFC3339Nano, date)
-		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, publisher, jsonStringToMap(settings), false))
+		tasks = append(tasks, utils.NewSchedulingWithID(uid, d, pubs, false))
 	}
 
 	return tasks
@@ -93,8 +95,13 @@ func (f *sqlite3db) StoreTask(t *utils.Scheduling) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	query, err := f.conn.Prepare("INSERT INTO tasks (uid, date, publisher, settings) VALUES (?, ?, ?, ?)")
-	_, err = query.Exec(t.ID, t.Date.Format(time.RFC3339Nano), t.Publisher, mapToJSONString(t.Settings))
+	b, err := json.Marshal(t.Publishers)
+	if err != nil {
+		return err
+	}
+
+	query, err := f.conn.Prepare("INSERT INTO tasks (uid, date, publishers) VALUES (?, ?, ?)")
+	_, err = query.Exec(t.ID, t.Date.Format(time.RFC3339Nano), string(b))
 	return err
 }
 

@@ -13,44 +13,37 @@ type RetryStrat struct {
 	Limit       int           `json:"limit"`
 }
 
+// Publisher represents a publisher
+type Publisher struct {
+	Publisher  string            `json:"publisher"`
+	Settings   map[string]string `json:"settings"`
+	RetryStrat *RetryStrat       `json:"retryStrategy"`
+}
+
 // Scheduling represents a scheduling object
 type Scheduling struct {
-	ID          string            `json:"id"`
-	Date        time.Time         `json:"date"`
-	Done        bool              `json:"done"`
-	Publisher   string            `json:"publisher"`
-	Settings    map[string]string `json:"settings"`
-	*RetryStrat `json:"retryStrategy"`
+	ID         string       `json:"id"`
+	Date       time.Time    `json:"date"`
+	Done       bool         `json:"done"`
+	Publishers []*Publisher `json:"publishers"`
 }
 
 // NewScheduling creates a new scheduling struct
-func NewScheduling(date time.Time, publisher string, settings map[string]string) *Scheduling {
+func NewScheduling(date time.Time, publishers []*Publisher) *Scheduling {
 	return &Scheduling{
-		ID:        uuid.New().String(),
-		Date:      date,
-		Publisher: publisher,
-		Settings:  settings,
-		RetryStrat: &RetryStrat{
-			Timeout:     25 * time.Millisecond,
-			Exponential: true,
-			Limit:       5,
-		},
+		ID:         uuid.New().String(),
+		Date:       date,
+		Publishers: publishers,
 	}
 }
 
 // NewSchedulingWithID creates a new scheduling struct
-func NewSchedulingWithID(id string, date time.Time, publisher string, settings map[string]string, done bool) *Scheduling {
+func NewSchedulingWithID(id string, date time.Time, publishers []*Publisher, done bool) *Scheduling {
 	return &Scheduling{
-		ID:        id,
-		Date:      date,
-		Publisher: publisher,
-		Settings:  settings,
-		Done:      done,
-		RetryStrat: &RetryStrat{
-			Timeout:     25 * time.Millisecond,
-			Exponential: true,
-			Limit:       5,
-		},
+		ID:         id,
+		Date:       date,
+		Done:       done,
+		Publishers: publishers,
 	}
 }
 

@@ -50,20 +50,24 @@ func (pm *PubManager) listen() {
 }
 
 func (pm *PubManager) publish(scheduling *utils.Scheduling) {
-	publisher, ok := pm.publishers[scheduling.Publisher]
-	strat := scheduling.RetryStrat
+	for _, pub := range scheduling.Publishers {
+		pubName := pub.Publisher
+		strat := pub.RetryStrat
+		settings := pub.Settings
+		publisher, ok := pm.publishers[pubName]
 
-	if ok {
-		go retry.Do(func() error {
-			logger.Info(fmt.Sprintf("try to publish to %s at %s", scheduling.Publisher, time.Now().Format(time.RFC3339Nano)))
-			err := publisher.Publish(scheduling.Settings)
-			if err != nil {
-				logger.Error(err.Error())
-				if err.ShouldRetry() {
-					return err
+		if ok {
+			go retry.Do(func() error {
+				logger.Info(fmt.Sprintf("try to publish to %s at %s", pubName, time.Now().Format(time.RFC3339Nano)))
+				err := publisher.Publish(settings)
+				if err != nil {
+					logger.Error(err.Error())
+					if err.ShouldRetry() {
+						return err
+					}
 				}
-			}
-			return nil
-		}, strat.Limit, strat.Timeout, strat.Exponential)
+				return nil
+			}, strat.Limit, strat.Timeout, strat.Exponential)
+		}
 	}
 }

@@ -84,7 +84,7 @@ func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
-	var scheduling scheduling
+	var scheduling Scheduling
 	w.Header().Set("Content-Type", "application/json")
 
 	err := json.NewDecoder(r.Body).Decode(&scheduling)
@@ -104,7 +104,7 @@ func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publisher, scheduling.Settings))
+	id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publishers))
 	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)

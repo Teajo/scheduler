@@ -32,12 +32,14 @@ func New(db db.Taskdb, taskDone chan *utils.Scheduling, timeChunk time.Duration)
 func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
 	err := q.db.StoreTask(scheduling)
 	if err != nil {
+		logger.Error(err.Error())
 		return scheduling.ID, err
 	}
 
 	id, err := q.createTask(scheduling)
 	if err != nil {
 		logger.Error(err.Error())
+		return "", err
 	}
 
 	return id, nil
