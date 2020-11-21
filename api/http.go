@@ -59,6 +59,7 @@ func (a *HTTPApi) onPing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
+	cors(w)
 	w.Header().Set("Content-Type", "application/json")
 
 	startStr := getQueryValue(r.URL.Query(), "startDate", []string{utils.FirstDate.Format(time.RFC3339Nano)})
@@ -84,6 +85,7 @@ func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
+	cors(w)
 	var scheduling Scheduling
 	w.Header().Set("Content-Type", "application/json")
 
@@ -122,4 +124,9 @@ func getQueryValue(query url.Values, key string, dflt []string) []string {
 		v = dflt
 	}
 	return v
+}
+
+func cors(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
