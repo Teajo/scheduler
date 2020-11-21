@@ -104,7 +104,7 @@ func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publishers, scheduling.Settings))
+	id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publisher, scheduling.Settings))
 	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
