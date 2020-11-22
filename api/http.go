@@ -49,6 +49,7 @@ func (a *HTTPApi) Listen() {
 	r.Get("/tasks", a.onGetTasks)
 	r.Post("/schedule", a.onPostSchedule)
 
+	// TODO: check http port availability
 	http.ListenAndServe(fmt.Sprintf(":%d", a.port), r)
 }
 

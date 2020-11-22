@@ -85,7 +85,6 @@ export default function PersistentDrawerLeft() {
   const classes = useStyles();
   const theme = useTheme();
   const [open, setOpen] = React.useState(false);
-  const [tasks, setTasks] = useState([]);
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -94,17 +93,6 @@ export default function PersistentDrawerLeft() {
   const handleDrawerClose = () => {
     setOpen(false);
   };
-
-  useEffect(() => {
-    axios.get(`http://127.0.0.1:3000/tasks?endDate=2021-11-18T20:48:15.771Z&startDate=2020-11-19T21:05:15.771Z`)
-    .then(res => {
-      const { data } = res.data;
-      setTasks(data);
-    })
-    .catch(err => {
-      console.log(err);
-    })
-  }, []);
 
   return (
     <div className={classes.root}>
@@ -169,7 +157,7 @@ export default function PersistentDrawerLeft() {
         })}
       >
         <div className={classes.drawerHeader} />
-        <Tasks tasks={tasks} />
+        <Tasks />
       </main>
     </div>
   );
