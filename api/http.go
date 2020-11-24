@@ -27,8 +27,8 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
-type tasksResponse struct {
-	Data []*utils.Scheduling `json:"data"`
+type dataResponse struct {
+	Data interface{} `json:"data"`
 }
 
 // NewHTTPApi creates a new http api struct
@@ -47,21 +47,23 @@ func (a *HTTPApi) Listen() {
 
 	r.Get("/", a.onPing)
 	r.Get("/tasks", a.onGetTasks)
-	r.Post("/schedule", a.onPostSchedule)
+	r.Get("/tasks/publishers", a.onGetPublishers)
+	r.Post("/tasks/schedule", a.onPostSchedule)
 
 	// TODO: check http port availability
 	http.ListenAndServe(fmt.Sprintf(":%d", a.port), r)
 }
 
 func (a *HTTPApi) onPing(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	jsonResp(w)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(successResponse{Message: "OK"})
 }
 
 func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 	cors(w)
-	w.Header().Set("Content-Type", "application/json")
+	jsonResp(w)
 
 	startStr := getQueryValue(r.URL.Query(), "startDate", []string{utils.FirstDate.Format(time.RFC3339Nano)})
 	endStr := getQueryValue(r.URL.Query(), "endDate", []string{utils.LastDate.Format(time.RFC3339Nano)})
@@ -82,13 +84,23 @@ func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 
 	tasks := a.ctrl.GetTasks(start, end)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(tasksResponse{Data: tasks})
+	json.NewEncoder(w).Encode(dataResponse{Data: tasks})
+}
+
+func (a *HTTPApi) onGetPublishers(w http.ResponseWriter, r *http.Request) {
+	cors(w)
+	jsonResp(w)
+
+	pubs := a.ctrl.GetPublishers()
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dataResponse{Data: pubs})
 }
 
 func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
 	cors(w)
+	jsonResp(w)
+
 	var scheduling Scheduling
-	w.Header().Set("Content-Type", "application/json")
 
 	err := json.NewDecoder(r.Body).Decode(&scheduling)
 	if err != nil {
@@ -130,4 +142,8 @@ func getQueryValue(query url.Values, key string, dflt []string) []string {
 func cors(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func jsonResp(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
 }

@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { DateTimePicker, MuiPickersUtilsProvider } from "@material-ui/pickers";
+import React from 'react';
+import { DateTimePicker, MuiPickersUtilsProvider } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
-
 
 export interface Props {
   date: Date;

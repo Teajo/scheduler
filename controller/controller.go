@@ -59,3 +59,8 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 func (c *Ctrl) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
 	return c.db.GetTasks(start, end)
 }
+
+// GetPublishers returns publishers
+func (c *Ctrl) GetPublishers() interface{} {
+	return c.pubs.GetAvailable()
+}

@@ -9,8 +9,9 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TablePagination from '@material-ui/core/TablePagination';
 import TableRow from '@material-ui/core/TableRow';
-import Picker from './pickers';
 import axios from 'axios';
+import Picker from './TimeFilter';
+import Checkbox from '@material-ui/core/Checkbox';
 
 interface Column {
   id: string;
@@ -23,7 +24,7 @@ interface Column {
 const columns: Column[] = [
   { id: 'id', label: 'ID', minWidth: 170 },
   { id: 'date', label: 'Date', minWidth: 100 },
-  { id: 'done', label: 'Done', minWidth: 100, format: l => String(l) },
+  { id: 'done', label: 'Done', minWidth: 100, format: (l) => String(l) },
 ];
 
 const useStyles = makeStyles({
@@ -31,30 +32,32 @@ const useStyles = makeStyles({
     width: '100%',
   },
   container: {
-    maxHeight: 700,
+    maxHeight: 620,
   },
 });
 
-export default function StickyHeadTable(props: any) {
+export default function StickyHeadTable() {
   const classes = useStyles();
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedStartDate, setSelectedStartDate] = React.useState<Date>(new Date());
   const [selectedEndDate, setSelectedEndDate] = React.useState<Date>(new Date());
   const [tasks, setTasks] = React.useState([]);
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const isSelected = (name: string) => selected.indexOf(name) !== -1;
 
   React.useEffect(() => {
     axios.get(`http://127.0.0.1:3000/tasks?endDate=${selectedEndDate.toISOString()}&startDate=${selectedStartDate.toISOString()}`)
-    .then(res => {
-      const { data } = res.data;
-      setTasks(data);
-    })
-    .catch(err => {
-      console.log(err);
-    })
+      .then((res) => {
+        const { data } = res.data;
+        setTasks(data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }, [selectedStartDate, selectedEndDate]);
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
   };
 
@@ -75,20 +78,35 @@ export default function StickyHeadTable(props: any) {
     }
   };
 
+  const handleRowSelection = (id: string) => {
+    if (!isSelected(id)) {
+      setSelected([id, ...selected]);
+    } else {
+      const s = [...selected];
+      const i = s.findIndex(t => t === id);
+      s.splice(i, 1);
+      setSelected(s);
+    }
+  };
+
   return (
     <>
       <div style={{ textAlign: 'left' }}>
-        <Picker label="Start" date={selectedStartDate} onChange={onStartChanged} />&nbsp;&nbsp;&nbsp;
+        <Picker label="Start" date={selectedStartDate} onChange={onStartChanged} />
+&nbsp;&nbsp;&nbsp;
         <Picker label="End" date={selectedEndDate} onChange={onEndChanged} />
       </div>
 
       <br />
-      
+
       <Paper className={classes.root}>
         <TableContainer className={classes.container}>
           <Table stickyHeader aria-label="sticky table">
             <TableHead>
               <TableRow>
+                <TableCell
+                  style={{ minWidth: '170' }}
+                />
                 {columns.map((column) => (
                   <TableCell
                     key={column.id}
@@ -101,9 +119,16 @@ export default function StickyHeadTable(props: any) {
               </TableRow>
             </TableHead>
             <TableBody>
-              {tasks.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row: any) => {
-                return (
+              {tasks.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row: any) => (
+                <>
                   <TableRow hover role="checkbox" tabIndex={-1} key={row.code}>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={isSelected(row.id)}
+                        onClick={() => handleRowSelection(row.id)}
+                        inputProps={{ 'aria-label': 'select all desserts' }}
+                      />
+                    </TableCell>
                     {columns.map((column) => {
                       const value = row[column.id];
                       return (
@@ -113,8 +138,8 @@ export default function StickyHeadTable(props: any) {
                       );
                     })}
                   </TableRow>
-                );
-              })}
+                </>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>

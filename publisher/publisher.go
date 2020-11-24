@@ -58,6 +58,15 @@ func (pm *PubManager) Get(id string) (Publisher, bool) {
 	return pub, ok
 }
 
+// GetAvailable returns a list of available publishers
+func (pm *PubManager) GetAvailable() map[string]map[string]*ConfigValueDef {
+	pubs := make(map[string]map[string]*ConfigValueDef)
+	for k, v := range pm.publishers {
+		pubs[k] = v.GetConfigDef()
+	}
+	return pubs
+}
+
 // Listen listens for done tasks
 func (pm *PubManager) listen() {
 	logger.Info("publisher listening for done tasks")
