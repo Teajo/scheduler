@@ -45,6 +45,7 @@ func (a *HTTPApi) Listen() {
 
 	r := chi.NewRouter()
 
+	r.Options("/*", a.options)
 	r.Get("/", a.onPing)
 	r.Get("/tasks", a.onGetTasks)
 	r.Get("/tasks/publishers", a.onGetPublishers)
@@ -54,7 +55,16 @@ func (a *HTTPApi) Listen() {
 	http.ListenAndServe(fmt.Sprintf(":%d", a.port), r)
 }
 
+func (a *HTTPApi) options(w http.ResponseWriter, r *http.Request) {
+	cors(w)
+	jsonResp(w)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(successResponse{Message: "OK"})
+}
+
 func (a *HTTPApi) onPing(w http.ResponseWriter, r *http.Request) {
+	cors(w)
 	jsonResp(w)
 
 	w.WriteHeader(http.StatusOK)
@@ -141,7 +151,8 @@ func getQueryValue(query url.Values, key string, dflt []string) []string {
 
 func cors(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Origin, content-type")
 }
 
 func jsonResp(w http.ResponseWriter) {

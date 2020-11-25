@@ -21,10 +21,10 @@ const (
 
 // ConfigValueDef config value def
 type ConfigValueDef struct {
-	Type     ValueType
-	Default  interface{}
-	Possible interface{}
-	Required bool
+	Type     ValueType   `json:"type"`
+	Default  interface{} `json:"default"`
+	Possible interface{} `json:"possible"`
+	Required bool        `json:"required"`
 }
 
 // Publisher interface
