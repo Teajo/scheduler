@@ -42,7 +42,7 @@ func (f *sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
+	logger.Info(fmt.Sprintf("Get all tasks which end before %s and start after %s", end.String(), start.String()))
 	tasks := []*utils.Scheduling{}
 	rows, err := f.conn.Query("SELECT uid, date, publishers, done FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) ORDER BY date ASC", start, end)
 	if err != nil {
@@ -69,7 +69,7 @@ func (f *sqlite3db) GetTasksToDo(start time.Time, end time.Time) []*utils.Schedu
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	logger.Info(fmt.Sprintf("Get all tasks which end before %s", end.String()))
+	logger.Info(fmt.Sprintf("Get all tasks to do which end before %s and after %s", end.String(), start.String()))
 	tasks := []*utils.Scheduling{}
 	rows, err := f.conn.Query("SELECT uid, date, publishers FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", start, end)
 	if err != nil {
@@ -118,7 +118,7 @@ func (f *sqlite3db) RemoveTask(id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	query, err := f.conn.Prepare("UPDATE tasks SET done = 1 WHERE uid = ?")
+	query, err := f.conn.Prepare("DELETE FROM tasks WHERE uid = ?")
 	_, err = query.Exec(id)
 	return err
 }

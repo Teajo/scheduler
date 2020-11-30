@@ -71,8 +71,8 @@ func (p *HTTPPublisher) Publish(cfg map[string]interface{}) *publisher.PublishEr
 func (p *HTTPPublisher) GetConfigDef() map[string]*publisher.ConfigValueDef {
 	m := make(map[string]*publisher.ConfigValueDef)
 	m["method"] = &publisher.ConfigValueDef{Required: true, Possible: []string{"POST", "PUT"}, Default: "", Type: publisher.STRING}
-	m["url"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.STRING}
-	m["json"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.JSON_STRING}
+	m["url"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.STRING, Placeholder: "http://127.0.0.1:8080"}
+	m["json"] = &publisher.ConfigValueDef{Required: true, Possible: nil, Default: "", Type: publisher.JSON_STRING, Placeholder: "{}"}
 	return m
 }
 

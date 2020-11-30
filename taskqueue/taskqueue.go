@@ -61,6 +61,15 @@ func (q *TaskQueue) LoadTasks() {
 	}
 }
 
+// Remove removes a task from queue and from db
+func (q *TaskQueue) Remove(id string) error {
+	err := q.queue.Remove(id)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	return q.db.RemoveTask(id)
+}
+
 func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
 	return func(scheduling *utils.Scheduling) {
 		logger.Info("task done", scheduling.ID)

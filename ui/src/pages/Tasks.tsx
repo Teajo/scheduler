@@ -12,6 +12,7 @@ import TableRow from '@material-ui/core/TableRow';
 import axios from 'axios';
 import Picker from './TimeFilter';
 import Checkbox from '@material-ui/core/Checkbox';
+import { Button } from '@material-ui/core';
 
 interface Column {
   id: string;
@@ -23,7 +24,7 @@ interface Column {
 
 const columns: Column[] = [
   { id: 'id', label: 'ID', minWidth: 170 },
-  { id: 'date', label: 'Date', minWidth: 100 },
+  { id: 'date', label: 'Date', minWidth: 100, format: (l) => new Date(l).toLocaleString() },
   { id: 'done', label: 'Done', minWidth: 100, format: (l) => String(l) },
 ];
 
@@ -42,6 +43,7 @@ export default function StickyHeadTable() {
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedStartDate, setSelectedStartDate] = React.useState<Date>(new Date());
   const [selectedEndDate, setSelectedEndDate] = React.useState<Date>(new Date());
+  const [lastUpdate, setLastUpdate] = React.useState(new Date());
   const [tasks, setTasks] = React.useState([]);
   const [selected, setSelected] = React.useState<string[]>([]);
   const isSelected = (name: string) => selected.indexOf(name) !== -1;
@@ -55,7 +57,7 @@ export default function StickyHeadTable() {
       .catch((err) => {
         console.log(err);
       });
-  }, [selectedStartDate, selectedEndDate]);
+  }, [selectedStartDate, selectedEndDate, lastUpdate]);
 
   const handleChangePage = (event: any, newPage: number) => {
     setPage(newPage);
@@ -89,11 +91,21 @@ export default function StickyHeadTable() {
     }
   };
 
+  const onRemoveTask = async (id: string) => {
+    try {
+      const res = await axios.delete(`http://127.0.0.1:3000/tasks/${id}`);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLastUpdate(new Date());
+    }
+  };
+
   return (
     <>
       <div style={{ textAlign: 'left' }}>
         <Picker label="Start" date={selectedStartDate} onChange={onStartChanged} />
-&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;
         <Picker label="End" date={selectedEndDate} onChange={onEndChanged} />
       </div>
 
@@ -116,6 +128,7 @@ export default function StickyHeadTable() {
                     {column.label}
                   </TableCell>
                 ))}
+                <TableCell style={{ minWidth: '170' }} />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -137,6 +150,9 @@ export default function StickyHeadTable() {
                         </TableCell>
                       );
                     })}
+                    <TableCell>
+                      <Button onClick={() => onRemoveTask(row.id)}>Remove</Button>
+                    </TableCell>
                   </TableRow>
                 </>
               ))}

@@ -46,9 +46,10 @@ func (sq *Queue) Remove(id string) error {
 	defer sq.mu.Unlock()
 
 	if _, ok := sq.queue[id]; !ok {
-		return errors.New(fmt.Sprint("task %s does not exist", id))
+		return fmt.Errorf("task %s does not exist in queue", id)
 	}
 
+	sq.queue[id].Cancel()
 	delete(sq.queue, id)
 
 	return nil

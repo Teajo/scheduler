@@ -64,3 +64,8 @@ func (c *Ctrl) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
 func (c *Ctrl) GetPublishers() interface{} {
 	return c.pubs.GetAvailable()
 }
+
+// RemoveTask removes a task according to id
+func (c *Ctrl) RemoveTask(id string) error {
+	return c.queue.Remove(id)
+}

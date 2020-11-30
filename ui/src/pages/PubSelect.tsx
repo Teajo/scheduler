@@ -51,7 +51,8 @@ const FieldComponent = ({ id, label, field, value, onChange }: Props) => {
         );
       } else {
         return (
-          <TextField 
+          <TextField
+            placeholder={field.placeholder}
             label={label} 
             value={value || ''} 
             type="text" 
@@ -62,7 +63,7 @@ const FieldComponent = ({ id, label, field, value, onChange }: Props) => {
       }
     case 'JSON_STRING':
       return (
-        <TextField 
+        <TextField
           label={label} 
           value={value || ''} 
           type="text" 
@@ -90,7 +91,8 @@ const FieldComponent = ({ id, label, field, value, onChange }: Props) => {
       );
     default:
       return (
-        <TextField 
+        <TextField
+          placeholder={field.placeholder}
           label={label} 
           value={value || ''} 
           type="text" 
@@ -151,7 +153,7 @@ export default function PubSelect({ data, onChange }: PubSelectProps) {
             Object.keys(publishers[data.publisher] || []).map((field, index) => (
               <div>
                 <FormControl className={classes.formControl} style={{marginTop: '5px'}}>
-                  <FieldComponent 
+                  <FieldComponent
                     id={'field'+index} 
                     label={`${data.publisher} ${field}`}
                     field={publishers[data.publisher][field]}

@@ -1,15 +1,5 @@
 import React from 'react';
-import Snackbar from '@material-ui/core/Snackbar';
-import { makeStyles, Theme } from '@material-ui/core/styles';
-
-const useStyles = makeStyles((theme: Theme) => ({
-  root: {
-    width: '100%',
-    '& > * + *': {
-      marginTop: theme.spacing(2),
-    },
-  },
-}));
+import Bar from './Bar';
 
 interface Props {
   open: boolean;
@@ -17,25 +7,14 @@ interface Props {
   onClose: () => void;
 }
 
-export default function ErrorBar({ open, message, onClose }: Props) {
-  const classes = useStyles();
-
+export default function SuccessBar({ open, message, onClose }: Props) {
   return (
-    <div className={classes.root}>
-      <Snackbar
-        open={open}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
-        autoHideDuration={6000}
-        onClose={onClose}
-        message={<div style={{color: 'green', fontWeight: 600}}>
-          SUCCESS <br />
-          {message}
-        </div>}
-        color={'red'}
-      />
-    </div>
+    <Bar 
+      open={open} 
+      color={'green'} 
+      title={'SUCCESS'} 
+      onClose={onClose} 
+      message={message} 
+    />
   );
 }
