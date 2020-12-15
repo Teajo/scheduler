@@ -4,6 +4,7 @@ Backend
 - queue maxLength
 - CRUD tasks
 - write full http API
+- refactor queue/db link (events ?)
 - <s>serve UI pages</s>
 - <s>publisher field placeholder</s>
 
