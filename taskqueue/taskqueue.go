@@ -1,8 +1,9 @@
 package taskqueue
 
 import (
-	"fmt"
+	"jpb/scheduler/config"
 	"jpb/scheduler/db"
+	"jpb/scheduler/events"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/task"
 	"jpb/scheduler/taskqueue/queue"
@@ -12,108 +13,72 @@ import (
 
 // TaskQueue represents a queue of tasks
 type TaskQueue struct {
-	db        db.Taskdb
-	queue     *queue.Queue
-	timeChunk time.Duration
-	taskDone  chan *utils.Scheduling
+	Bus   *events.Bus    `inject:""`
+	DB    db.Taskdb      `inject:""`
+	Cfg   *config.Config `inject:""`
+	queue *queue.Queue
+	end   time.Time
 }
 
-// New creates a new taskqueue
-func New(db db.Taskdb, taskDone chan *utils.Scheduling, timeChunk time.Duration) *TaskQueue {
-	return &TaskQueue{
-		db:        db,
-		queue:     queue.New(utils.LastDate),
-		timeChunk: timeChunk,
-		taskDone:  taskDone,
-	}
+// Start starts taskqueue ticking
+func (q *TaskQueue) Start() {
+	q.queue = queue.New()
+	q.end = time.Now()
+	tick := q.Bus.Subscribe(events.TICK)
+	go q.onTick(tick)
 }
 
-// Add adds task to queue
-func (q *TaskQueue) Add(scheduling *utils.Scheduling) (string, error) {
-	err := q.db.StoreTask(scheduling)
+// Add adds task to queue and store it
+func (q *TaskQueue) Add(s *utils.Scheduling) error {
+	err := q.DB.StoreTask(s)
 	if err != nil {
-		logger.Error(err.Error())
-		return scheduling.ID, err
+		return err
 	}
 
-	id, err := q.createTask(scheduling)
-	if err != nil {
-		logger.Error(err.Error())
-		return "", err
+	if s.Date.Before(q.end) {
+		q.appendTask(s)
 	}
 
-	return id, nil
+	return nil
 }
 
-// LoadTasks loads tasks from db
-func (q *TaskQueue) LoadTasks() {
-	now := time.Now()
-	nextEnd := q.getNextEnd(now).Add(time.Second)
-	q.queue.UpdateEnd(nextEnd)
-	setTimer(now.Add(q.timeChunk).Sub(now), q.LoadTasks)
-
-	tasks := q.db.GetTasksToDo(utils.FirstDate, nextEnd)
-	for _, t := range tasks {
-		_, err := q.createTask(t)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-	}
-}
-
-// Remove removes a task from queue and from db
+// Remove removes task from queue
 func (q *TaskQueue) Remove(id string) error {
-	err := q.queue.Remove(id)
+	q.queue.Remove(id)
+	return q.DB.RemoveTask(id)
+}
+
+func (q *TaskQueue) appendTask(s *utils.Scheduling) {
+	task := task.New(s)
+	err := q.queue.Add(task)
 	if err != nil {
 		logger.Error(err.Error())
+	} else {
+		go task.Do(q.onTaskDone())
 	}
-	return q.db.RemoveTask(id)
 }
 
 func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
 	return func(scheduling *utils.Scheduling) {
 		logger.Info("task done", scheduling.ID)
-		q.notifyTaskDone(scheduling)
-		q.ackTask(scheduling.ID)
+		q.queue.Remove(scheduling.ID)
+		q.DB.AckTask(scheduling.ID)
 	}
 }
 
-func (q *TaskQueue) notifyTaskDone(scheduling *utils.Scheduling) {
-	q.taskDone <- scheduling
-}
+func (q *TaskQueue) onTick(tick chan interface{}) {
+	for {
+		payload := <-tick
+		logger.Info("on tick")
+		now, ok := payload.(time.Time)
+		if !ok {
+			continue
+		}
 
-func (q *TaskQueue) createTask(scheduling *utils.Scheduling) (string, error) {
-	task := task.New(scheduling)
-
-	err := q.queue.Add(task)
-	if err != nil {
-		return task.ID, err
+		q.end = now.Add(q.Cfg.TimeChunk)
+		tasks := q.DB.GetTasksToDo(q.end)
+		for _, t := range tasks {
+			q.appendTask(t)
+		}
 	}
-
-	go task.Do(q.onTaskDone())
-
-	logger.Info(fmt.Sprintf("task %s created", scheduling.ID))
-
-	return task.ID, nil
-}
-
-func (q *TaskQueue) ackTask(id string) error {
-	err := q.db.AckTask(id)
-	if err != nil {
-		return err
-	}
-
-	err = q.queue.Remove(id)
-	return err
-}
-
-func (q *TaskQueue) getNextEnd(now time.Time) time.Time {
-	return now.Add(q.timeChunk)
-}
-
-func setTimer(delay time.Duration, cb func()) {
-	go func() {
-		<-time.After(delay)
-		cb()
-	}()
 }

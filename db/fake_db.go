@@ -5,29 +5,31 @@ import (
 	"time"
 )
 
-type fakedb struct {
+// FakeDb struct
+type FakeDb struct {
 }
 
-func newFakedb() *fakedb {
-	return &fakedb{}
+// NewFakedb returns fakedb driver
+func NewFakedb() *FakeDb {
+	return &FakeDb{}
 }
 
-func (f *fakedb) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
+func (f *FakeDb) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
 	return []*utils.Scheduling{}
 }
 
-func (f *fakedb) GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling {
+func (f *FakeDb) GetTasksToDo(end time.Time) []*utils.Scheduling {
 	return []*utils.Scheduling{}
 }
 
-func (f *fakedb) StoreTask(*utils.Scheduling) error {
+func (f *FakeDb) StoreTask(*utils.Scheduling) error {
 	return nil
 }
 
-func (f *fakedb) AckTask(string) error {
+func (f *FakeDb) AckTask(string) error {
 	return nil
 }
 
-func (f *fakedb) RemoveTask(string) error {
+func (f *FakeDb) RemoveTask(string) error {
 	return nil
 }

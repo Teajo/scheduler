@@ -1,3 +1,7 @@
+github.com/facebookgo/inject v0.0.0-20180706035515-f23751cae28b h1:V6c4/dSTNhSaNn4c5ulbakfv277qCvs7byFYv7P83iQ=
+github.com/facebookgo/inject v0.0.0-20180706035515-f23751cae28b/go.mod h1:oO8UHw+fDHjDsk4CTy/E96WDzFUYozAtBAaGNoVL0+c=
+github.com/facebookgo/structtag v0.0.0-20150214074306-217e25fb9691 h1:KnnwHN59Jxec0htA2pe/i0/WI9vxXLQifdhBrP3lqcQ=
+github.com/facebookgo/structtag v0.0.0-20150214074306-217e25fb9691/go.mod h1:sKLL1iua/0etWfo/nPCmyz+v2XDMXy+Ho53W7RAuZNY=
 github.com/go-chi/chi v1.0.0 h1:s/kv1cTXfivYjdKJdyUzNGyAWZ/2t7duW1gKn5ivu+c=
 github.com/go-chi/chi v4.1.2+incompatible h1:fGFk2Gmi/YKXk0OmGfBh0WgmN3XB8lVnEyNz34tQRec=
 github.com/go-chi/chi v4.1.2+incompatible/go.mod h1:eB3wogJHnLi3x/kFX2A+IbTBlXxmMeXJVKy9tTv1XzQ=

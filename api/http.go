@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"jpb/scheduler/config"
 	"jpb/scheduler/controller"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/utils"
@@ -19,8 +20,8 @@ import (
 
 // HTTPApi represents http api
 type HTTPApi struct {
-	port int
-	ctrl *controller.Ctrl
+	Cfg  *config.Config   `inject:""`
+	Ctrl *controller.Ctrl `inject:""`
 }
 
 type successResponse struct {
@@ -35,17 +36,9 @@ type dataResponse struct {
 	Data interface{} `json:"data"`
 }
 
-// NewHTTPApi creates a new http api struct
-func NewHTTPApi(port int, ctrl *controller.Ctrl) *HTTPApi {
-	return &HTTPApi{
-		port: port,
-		ctrl: ctrl,
-	}
-}
-
 // Listen starts listening
 func (a *HTTPApi) Listen() {
-	logger.Info(fmt.Sprintf("http api listening for schedules in %d", a.port))
+	logger.Info(fmt.Sprintf("http api listening for schedules in %d", a.Cfg.Port))
 
 	router := chi.NewRouter()
 
@@ -58,7 +51,7 @@ func (a *HTTPApi) Listen() {
 	router.Delete("/tasks/{id}", a.onDeleteTask)
 
 	// TODO: check http port availability
-	http.ListenAndServe(fmt.Sprintf(":%d", a.port), router)
+	http.ListenAndServe(fmt.Sprintf(":%d", a.Cfg.Port), router)
 }
 
 func (a *HTTPApi) options(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +91,7 @@ func (a *HTTPApi) onGetTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks := a.ctrl.GetTasks(start, end)
+	tasks := a.Ctrl.GetTasks(start, end)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(dataResponse{Data: tasks})
 }
@@ -107,7 +100,7 @@ func (a *HTTPApi) onGetPublishers(w http.ResponseWriter, r *http.Request) {
 	cors(w)
 	jsonResp(w)
 
-	pubs := a.ctrl.GetPublishers()
+	pubs := a.Ctrl.GetPublishers()
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(dataResponse{Data: pubs})
 }
@@ -135,7 +128,7 @@ func (a *HTTPApi) onPostSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := a.ctrl.Schedule(utils.NewScheduling(t, scheduling.Publishers))
+	id, err := a.Ctrl.Schedule(utils.NewScheduling(t, scheduling.Publishers))
 	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
@@ -158,7 +151,7 @@ func (a *HTTPApi) onDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := a.ctrl.RemoveTask(id)
+	err := a.Ctrl.RemoveTask(id)
 	if err != nil {
 		logger.Error(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)

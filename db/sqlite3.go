@@ -12,12 +12,14 @@ import (
 	_ "github.com/mattn/go-sqlite3" // sqlite3
 )
 
-type sqlite3db struct {
+// Sqlite3db struct
+type Sqlite3db struct {
 	conn *sql.DB
 	mu   sync.Mutex
 }
 
-func newSqlite3() *sqlite3db {
+// NewSqlite3 returns a sqlite3 driver
+func NewSqlite3() *Sqlite3db {
 	conn, err := sql.Open("sqlite3", "./scheduler.db")
 	if err != nil {
 		panic(err.Error())
@@ -33,12 +35,12 @@ func newSqlite3() *sqlite3db {
 		panic(err.Error())
 	}
 
-	return &sqlite3db{
+	return &Sqlite3db{
 		conn: conn,
 	}
 }
 
-func (f *sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
+func (f *Sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -65,13 +67,13 @@ func (f *sqlite3db) GetTasks(start time.Time, end time.Time) []*utils.Scheduling
 	return tasks
 }
 
-func (f *sqlite3db) GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling {
+func (f *Sqlite3db) GetTasksToDo(end time.Time) []*utils.Scheduling {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	logger.Info(fmt.Sprintf("Get all tasks to do which end before %s and after %s", end.String(), start.String()))
+	logger.Info(fmt.Sprintf("Get all tasks to do which end before %s", end.String()))
 	tasks := []*utils.Scheduling{}
-	rows, err := f.conn.Query("SELECT uid, date, publishers FROM tasks WHERE datetime(date) >= datetime(?) AND datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", start, end)
+	rows, err := f.conn.Query("SELECT uid, date, publishers FROM tasks WHERE datetime(date) <= datetime(?) AND done = 0 ORDER BY date ASC", end)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +93,7 @@ func (f *sqlite3db) GetTasksToDo(start time.Time, end time.Time) []*utils.Schedu
 	return tasks
 }
 
-func (f *sqlite3db) StoreTask(t *utils.Scheduling) error {
+func (f *Sqlite3db) StoreTask(t *utils.Scheduling) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -105,7 +107,7 @@ func (f *sqlite3db) StoreTask(t *utils.Scheduling) error {
 	return err
 }
 
-func (f *sqlite3db) AckTask(id string) error {
+func (f *Sqlite3db) AckTask(id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -114,7 +116,7 @@ func (f *sqlite3db) AckTask(id string) error {
 	return err
 }
 
-func (f *sqlite3db) RemoveTask(id string) error {
+func (f *Sqlite3db) RemoveTask(id string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
