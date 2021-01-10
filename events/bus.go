@@ -7,7 +7,9 @@ type Bus struct {
 
 // New creates a new bus
 func New() *Bus {
-	return &Bus{}
+	return &Bus{
+		listeners: make(map[string][]chan interface{}),
+	}
 }
 
 // Subscribe subscribes to an event

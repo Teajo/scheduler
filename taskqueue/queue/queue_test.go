@@ -19,7 +19,7 @@ func TestSortedQueueInstantiation(t *testing.T) {
 
 func TestSortedQueueInsert(t *testing.T) {
 	queue := New(3, lastDate)
-	ta := task.New(utils.NewScheduling(time.Now(), "test", make(map[string]string)))
+	ta := task.New(utils.NewScheduling(time.Now(), make(map[string]string)))
 	queue.Add(ta)
 	if queue.Len() != 1 {
 		t.Error("queue length should be 1")

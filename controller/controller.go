@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"jpb/scheduler/config"
 	"jpb/scheduler/db"
+	"jpb/scheduler/events"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/publisher"
 	"jpb/scheduler/taskqueue"
@@ -13,35 +14,19 @@ import (
 
 // Ctrl represents a scheduler controller
 type Ctrl struct {
-	db       db.Taskdb
-	queue    *taskqueue.TaskQueue
-	pubs     *publisher.PubManager
-	taskDone chan *utils.Scheduling
-}
-
-// New creates a scheduler controller
-func New() *Ctrl {
-	cfg := config.Get()
-	db := db.Getdb(cfg.DbDriver)
-	taskDone := make(chan *utils.Scheduling)
-	pubs := publisher.New(taskDone)
-	queue := taskqueue.New(db, taskDone, cfg.TimeChunk)
-	queue.LoadTasks()
-
-	return &Ctrl{
-		db:       db,
-		queue:    queue,
-		pubs:     pubs,
-		taskDone: make(chan *utils.Scheduling),
-	}
+	DB    db.Taskdb             `inject:""`
+	Queue *taskqueue.TaskQueue  `inject:""`
+	Bus   *events.Bus           `inject:""`
+	Cfg   *config.Config        `inject:""`
+	Pubs  *publisher.PubManager `inject:""`
 }
 
 // Schedule schedules a task
-func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
-	logger.Info("Schedule a task at", scheduling.Date.Format(time.RFC3339Nano))
+func (c *Ctrl) Schedule(s *utils.Scheduling) (string, error) {
+	logger.Info("Schedule a task at", s.Date.Format(time.RFC3339Nano))
 
-	for _, publ := range scheduling.Publishers {
-		pub, ok := c.pubs.Get(publ.Publisher)
+	for _, publ := range s.Publishers {
+		pub, ok := c.Pubs.Get(publ.Publisher)
 		if !ok {
 			return "", fmt.Errorf("Publisher %s does not exist", publ.Publisher)
 		}
@@ -52,20 +37,25 @@ func (c *Ctrl) Schedule(scheduling *utils.Scheduling) (string, error) {
 		}
 	}
 
-	return c.queue.Add(scheduling)
+	err := c.Queue.Add(s)
+	if err != nil {
+		return "", err
+	}
+
+	return s.ID, nil
 }
 
 // GetTasks returns tasks from db
 func (c *Ctrl) GetTasks(start time.Time, end time.Time) []*utils.Scheduling {
-	return c.db.GetTasks(start, end)
+	return c.DB.GetTasks(start, end)
 }
 
 // GetPublishers returns publishers
 func (c *Ctrl) GetPublishers() interface{} {
-	return c.pubs.GetAvailable()
+	return c.Pubs.GetAvailable()
 }
 
 // RemoveTask removes a task according to id
 func (c *Ctrl) RemoveTask(id string) error {
-	return c.queue.Remove(id)
+	return c.Queue.Remove(id)
 }

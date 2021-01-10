@@ -13,31 +13,24 @@ import (
 
 // TaskQueue represents a queue of tasks
 type TaskQueue struct {
-	queue  *queue.Queue
-	bus    *events.Bus
-	db     db.Taskdb
-	config *config.Config
-	end    time.Time
-}
-
-// New creates a new taskqueue
-func New() *TaskQueue {
-	return &TaskQueue{
-		queue: queue.New(),
-		end:   time.Now(),
-	}
+	Bus   *events.Bus    `inject:""`
+	DB    db.Taskdb      `inject:""`
+	Cfg   *config.Config `inject:""`
+	queue *queue.Queue
+	end   time.Time
 }
 
 // Start starts taskqueue ticking
 func (q *TaskQueue) Start() {
-	tick := q.bus.Subscribe(events.TICK)
-
+	q.queue = queue.New()
+	q.end = time.Now()
+	tick := q.Bus.Subscribe(events.TICK)
 	go q.onTick(tick)
 }
 
 // Add adds task to queue and store it
 func (q *TaskQueue) Add(s *utils.Scheduling) error {
-	err := q.db.StoreTask(s)
+	err := q.DB.StoreTask(s)
 	if err != nil {
 		return err
 	}
@@ -50,9 +43,9 @@ func (q *TaskQueue) Add(s *utils.Scheduling) error {
 }
 
 // Remove removes task from queue
-func (q *TaskQueue) Remove(s *utils.Scheduling) error {
-	q.queue.Remove(s.ID)
-	return q.db.RemoveTask(s.ID)
+func (q *TaskQueue) Remove(id string) error {
+	q.queue.Remove(id)
+	return q.DB.RemoveTask(id)
 }
 
 func (q *TaskQueue) appendTask(s *utils.Scheduling) {
@@ -69,19 +62,21 @@ func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
 	return func(scheduling *utils.Scheduling) {
 		logger.Info("task done", scheduling.ID)
 		q.queue.Remove(scheduling.ID)
+		q.DB.AckTask(scheduling.ID)
 	}
 }
 
 func (q *TaskQueue) onTick(tick chan interface{}) {
 	for {
 		payload := <-tick
+		logger.Info("on tick")
 		now, ok := payload.(time.Time)
 		if !ok {
 			continue
 		}
 
-		q.end = now.Add(q.config.TimeChunk)
-		tasks := q.db.GetTasksToDo(now, q.end)
+		q.end = now.Add(q.Cfg.TimeChunk)
+		tasks := q.DB.GetTasksToDo(q.end)
 		for _, t := range tasks {
 			q.appendTask(t)
 		}

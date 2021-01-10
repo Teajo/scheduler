@@ -7,31 +7,19 @@ import (
 
 // Ticker is a ticker
 type Ticker struct {
-	stop chan interface{}
-}
-
-// New returns a new ticker
-func New() *Ticker {
-	return &Ticker{make(chan interface{})}
+	Bus *events.Bus `inject:""`
 }
 
 // Start starts a ticker
-func (t *Ticker) Start(period time.Duration, bus events.Bus) {
+func (t *Ticker) Start(period time.Duration) {
 	ticker := time.NewTicker(period)
 
 	go func() {
+		t.Bus.Emit(events.TICK, time.Now())
+
 		for {
-			select {
-			case t := <-ticker.C:
-				bus.Emit(events.TICK, t)
-			case <-t.stop:
-				return
-			}
+			d := <-ticker.C
+			t.Bus.Emit(events.TICK, d)
 		}
 	}()
-}
-
-// Stop stops ticker
-func (t *Ticker) Stop() {
-	t.stop <- nil
 }

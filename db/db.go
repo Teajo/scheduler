@@ -12,7 +12,7 @@ type Taskdb interface {
 	GetTasks(start time.Time, end time.Time) []*utils.Scheduling
 
 	// Returns tasks to do
-	GetTasksToDo(start time.Time, end time.Time) []*utils.Scheduling
+	GetTasksToDo(end time.Time) []*utils.Scheduling
 
 	// Store task scheduling
 	StoreTask(*utils.Scheduling) error
@@ -28,9 +28,9 @@ type Taskdb interface {
 func Getdb(driver string) Taskdb {
 	switch driver {
 	case "fake":
-		return newFakedb()
+		return NewFakedb()
 	case "sqlite3":
-		return newSqlite3()
+		return NewSqlite3()
 	default:
 		panic(fmt.Sprintf("driver %s not handled", driver))
 	}

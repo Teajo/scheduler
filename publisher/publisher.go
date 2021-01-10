@@ -3,6 +3,7 @@ package publisher
 import (
 	"fmt"
 	"jpb/scheduler/config"
+	"jpb/scheduler/events"
 	"jpb/scheduler/logger"
 	"jpb/scheduler/retry"
 	"jpb/scheduler/utils"
@@ -36,21 +37,16 @@ type Publisher interface {
 
 // PubManager is a publisher manager
 type PubManager struct {
-	taskDone   chan *utils.Scheduling
+	Bus        *events.Bus `inject:""`
 	publishers map[string]Publisher
 }
 
-// New creates a publisher manager
-func New(taskDone chan *utils.Scheduling) *PubManager {
-	pubs := loadPublisherPlugins(config.Get().PluginDir)
+// Start starts a publisher manager
+func (pm *PubManager) Start() {
+	pm.publishers = loadPublisherPlugins(config.Get().PluginDir)
 
-	pm := &PubManager{
-		taskDone:   taskDone,
-		publishers: pubs,
-	}
-
-	go pm.listen()
-	return pm
+	e := pm.Bus.Subscribe(events.TASKDONE)
+	go pm.listen(e)
 }
 
 // Get retrieves a publisher according to provided id
@@ -69,11 +65,16 @@ func (pm *PubManager) GetAvailable() map[string]map[string]*ConfigValueDef {
 }
 
 // Listen listens for done tasks
-func (pm *PubManager) listen() {
+func (pm *PubManager) listen(e chan interface{}) {
 	logger.Info("publisher listening for done tasks")
 	for {
-		scheduling := <-pm.taskDone
-		pm.publish(scheduling)
+		payload := <-e
+		s, ok := payload.(*utils.Scheduling)
+		if !ok {
+			logger.Error("Impossible to cast publishing payload")
+		}
+
+		pm.publish(s)
 	}
 }
 
