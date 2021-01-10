@@ -59,17 +59,17 @@ func (q *TaskQueue) appendTask(s *utils.Scheduling) {
 }
 
 func (q *TaskQueue) onTaskDone() func(*utils.Scheduling) {
-	return func(scheduling *utils.Scheduling) {
-		logger.Info("task done", scheduling.ID)
-		q.queue.Remove(scheduling.ID)
-		q.DB.AckTask(scheduling.ID)
+	return func(s *utils.Scheduling) {
+		logger.Info("task done", s.ID)
+		q.queue.Remove(s.ID)
+		q.DB.AckTask(s.ID)
+		q.Bus.Emit(events.TASKDONE, s)
 	}
 }
 
 func (q *TaskQueue) onTick(tick chan interface{}) {
 	for {
 		payload := <-tick
-		logger.Info("on tick")
 		now, ok := payload.(time.Time)
 		if !ok {
 			continue
